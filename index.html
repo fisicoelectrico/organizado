@@ -410,7 +410,7 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
 .tour-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,12,.78);transition:all .28s cubic-bezier(.2,.8,.2,1);pointer-events:none}
 .tour-hole.ring{outline:2px solid var(--hero-gold);outline-offset:3px}
 .tour-block{position:fixed;inset:0}
-.tour-card{position:fixed;left:16px;right:16px;max-width:420px;margin:0 auto;background:var(--surface);color:var(--ink);border-radius:20px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.3);display:grid;gap:10px;transition:top .28s,bottom .28s}
+.tour-card{position:fixed;left:16px;right:16px;max-width:420px;max-height:calc(100% - 24px);overflow-y:auto;overscroll-behavior:contain;margin:0 auto;background:var(--surface);color:var(--ink);border-radius:20px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.3);display:grid;gap:10px;transition:top .28s,bottom .28s}
 .tour-card h3{font-family:var(--f-display);font-size:19px;margin:0;text-wrap:balance}
 .tour-card p{margin:0;font-size:14.5px;color:var(--muted)}
 .tour-dots{display:flex;gap:5px}
@@ -1693,8 +1693,8 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
     </div></div>`}
 
 /* ============ reseñas y sugerencias ============ */
-const CORREO_OPINIONES='organizadosusuarios@outlook.com';
-const APP_VERSION='1.0';
+const CORREO_OPINIONES='fred.yricardo12@gmail.com';
+const APP_VERSION='1.0.1';
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1846,6 +1846,18 @@ function drawTour(){
       :`<p>Ya tienes tus datos cargados. Recuerda descargar un respaldo cada semana desde <b>Más › Importar y respaldos</b>.</p><div class="tour-row"><span></span><button class="btn" data-tour="done">Listo</button></div>`;
   }else body=`<p>${st.p}</p>${st.name?`<label class="field"><span style="font-size:12.5px;font-weight:700;color:var(--muted)">¿Cómo te llamamos?</span><input class="inp" id="tour-name" maxlength="24" placeholder="Tu nombre o alias" value="${esc(S.perfil.nombre)}" autocomplete="given-name"></label>`:''}<div class="tour-row"><button class="link" data-tour="skip" style="color:var(--muted)">Saltar guía</button><div style="display:flex;gap:8px">${tourI>0?'<button class="btn ghost sm" data-tour="prev">Atrás</button>':''}<button class="btn sm" data-tour="next">${tourI===0?'Empezar':'Siguiente'}</button></div></div>`;
   card.innerHTML=`${dots}<h3 id="tour-t">${st.t}</h3>${body}`;
+  tourEl=el;placeTour();
+  const tn=$('#tour-name',card);
+  if(tn){
+    tn.addEventListener('input',()=>{S.perfil.nombre=tn.value.slice(0,24);persist()});
+    tn.addEventListener('focus',()=>{typingTour=true;card.style.bottom='';card.style.top='12px'});
+    tn.addEventListener('blur',()=>{typingTour=false;setTimeout(()=>{if(tourOn&&!typingTour)placeTour()},250)});
+  }
+  const f=$('[data-tour=next],[data-tour=excel],[data-tour=done]',card);if(f&&!tn)f.focus({preventScroll:true});
+}
+let tourEl=null,typingTour=false;
+function placeTour(){
+  const hole=$('#tour-hole'),card=$('#tour-card'),el=tourEl&&tourEl.isConnected?tourEl:null;
   card.style.top=card.style.bottom=card.style.left=card.style.right=card.style.margin=card.style.width='';
   if(el){const r=el.getBoundingClientRect(),pd=6;
     Object.assign(hole.style,{left:(r.left-pd)+'px',top:(r.top-pd)+'px',width:(r.width+pd*2)+'px',height:(r.height+pd*2)+'px'});hole.classList.add('ring');
@@ -1854,8 +1866,9 @@ function drawTour(){
       if(side)card.style.top=Math.max(16,Math.min(innerHeight-ch-16,r.top+r.height/2-ch/2))+'px';
       else if(r.bottom+pd+14+ch<innerHeight)card.style.top=(r.bottom+pd+14)+'px';else card.style.top=Math.max(16,r.top-pd-14-ch)+'px';}
     else if(r.top+r.height/2>innerHeight/2)card.style.bottom=(innerHeight-r.top+pd+14)+'px';else card.style.top=(r.bottom+pd+14)+'px';
-  }else{Object.assign(hole.style,{left:'50%',top:'50%',width:'0px',height:'0px'});hole.classList.remove('ring');card.style.top=Math.max(24,(innerHeight-card.offsetHeight)/2)+'px'}
-  const f=$('#tour-name',card)||$('[data-tour=next],[data-tour=excel],[data-tour=done]',card);if(f&&f.id!=='tour-name')f.focus({preventScroll:true});
+  }else{Object.assign(hole.style,{left:'50%',top:'50%',width:'0px',height:'0px'});hole.classList.remove('ring');
+    // en celular la tarjeta con campo de texto va arriba, para que el teclado no la tape
+    card.style.top=($('#tour-name',card)&&innerWidth<900)?'12vh':Math.max(24,(innerHeight-card.offsetHeight)/2)+'px'}
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-tour]');if(!b)return;e.stopPropagation();const a=b.dataset.tour;
   const tn=$('#tour-name');if(tn){S.perfil.nombre=tn.value.trim().slice(0,24);persist();try{localStorage.setItem('organizado.askname','1')}catch(e){}}
@@ -1866,7 +1879,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-tour]');if
   else if(a==='blank')endTour(()=>{const pf=S.perfil;S=blank();S.perfil=pf;save();go('cuentas');toast('Renombra tus cuentas y agrega las que te falten')});
 },true);
 document.addEventListener('keydown',e=>{if(!tourOn)return;if(e.key==='Escape')endTour();else if(e.target&&e.target.tagName==='INPUT'){if(e.key==='Enter'){const nb=$('[data-tour=next]');if(nb)nb.click()}return}else if(e.key==='ArrowRight'&&!TOUR[tourI].last){tourI++;drawTour()}else if(e.key==='ArrowLeft'&&tourI>0){tourI--;drawTour()}});
-addEventListener('resize',()=>{if(tourOn)drawTour()});
+let tourRz;addEventListener('resize',()=>{if(!tourOn||typingTour)return;clearTimeout(tourRz);tourRz=setTimeout(placeTour,120)});
 
 /* ============ aviso al abrir ============ */
 function showAlertsOnOpen(){
