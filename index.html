@@ -275,6 +275,8 @@ input,select,textarea{font:inherit;color:var(--ink)}
 .stars button{font-size:30px;line-height:1;color:var(--line);padding:2px}
 .stars button.on{color:var(--gold)}
 textarea.inp{resize:vertical;min-height:110px;font-family:var(--f-body);line-height:1.45}
+.fb-to{display:grid;justify-items:center;gap:2px;text-align:center;padding:4px 0}
+.fb-to .sel{user-select:all;font-size:15px}
 .btn.wa{background:#128C4B;color:#fff;text-decoration:none}
 a.btn{text-decoration:none}
 .btn.wa[aria-disabled="true"]{opacity:.55}
@@ -1430,6 +1432,7 @@ const ACT={
   revealSaldo:()=>{UI.reveal=!UI.reveal;render()},
   fbTipo:el=>{FB.txt=$('#fb-t')?$('#fb-t').value:FB.txt;FB.tipo=el.dataset.v;render()},
   fbEst:el=>{FB.txt=$('#fb-t')?$('#fb-t').value:FB.txt;FB.est=FB.est===+el.dataset.v?0:+el.dataset.v;render()},
+  fbCopyMail:()=>{navigator.clipboard.writeText(CORREO_OPINIONES).then(()=>toast('Dirección copiada'),()=>toast('Selecciónala y cópiala'))},
   fbCopy:()=>{if(!FB.txt.trim()){$('#fb-err').textContent='Escribe tu mensaje primero.';return}navigator.clipboard.writeText(fbMsg()).then(()=>toast('Mensaje copiado'),()=>$('#fb-err').textContent='Tu navegador no dejó copiar. Selecciona el texto y cópialo.')},
   pinRecovery:()=>pinCheck(()=>{closeSheet();makeRecovery()},'Código de recuperación'),
   atajoUsar:el=>{const l=el.dataset.sug?atajosSugeridos(6):S.atajos;const a=l[+el.dataset.i];if(a)usarAtajo(a)},
@@ -1690,7 +1693,11 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
     </div></div>`}
 
 /* ============ reseñas y sugerencias ============ */
-const WHATSAPP_FREDY='573004920180';   // ← número con indicativo, sin + ni espacios. Ej: 573001234567
+const CORREO_OPINIONES='organizadosusuarios@outlook.com';
+const APP_VERSION='1.0';
+function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
+  if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
+usoDesde();
 let FB={tipo:'mejora',est:0,txt:''};
 V.opinion={html(){
   const tipos=[['mejora','💡 Idea o mejora'],['error','🐞 Algo falla'],['resena','⭐ Reseña']];
@@ -1700,19 +1707,21 @@ V.opinion={html(){
     <div class="field"><span>${FB.tipo==='resena'?'Tu calificación':'¿Qué tanto te gusta la app? (opcional)'}</span><div class="stars" role="radiogroup" aria-label="Calificación">${[1,2,3,4,5].map(n=>`<button role="radio" aria-checked="${FB.est===n}" aria-label="${n} de 5" data-act="fbEst" data-v="${n}" class="${n<=FB.est?'on':''}">★</button>`).join('')}</div></div>
     <label class="field"><span>${FB.tipo==='error'?'¿Qué pasó y en qué pantalla?':FB.tipo==='resena'?'Tu opinión':'Tu idea'}</span><textarea class="inp" id="fb-t" rows="5" maxlength="1200" placeholder="${FB.tipo==='error'?'Ej. En Análisis, al tocar 12 meses la gráfica no carga.':FB.tipo==='resena'?'Ej. Me ayudó a ver cuánto gasto en domicilios.':'Ej. Que se pueda adjuntar la foto de la factura.'}">${esc(FB.txt)}</textarea></label>
     <p class="err" id="fb-err"></p>
-    <a class="btn block wa" id="fb-wa" href="#" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+    <a class="btn block" id="fb-mail" href="#">✉️ Enviar por correo</a>
     <button class="btn block ghost" data-act="fbCopy">Copiar el mensaje</button>
-    <p class="small muted" style="margin:0">Se abre WhatsApp con el mensaje listo; tú decides si lo envías. No se adjunta ninguno de tus datos financieros.</p>
+    <div class="fb-to"><span class="small muted">Si no se abre tu correo, escríbenos a</span><b class="sel">${CORREO_OPINIONES}</b><button class="link" data-act="fbCopyMail">Copiar dirección</button></div>
+    <p class="small muted" style="margin:0">Se abre tu app de correo con el mensaje listo; tú decides si lo envías. Solo se agrega desde cuándo usas la app y si es celular o computador, nunca tus datos financieros.</p>
   </div></div>`},
-mount(){const t=$('#fb-t'),a=$('#fb-wa');
+mount(){const t=$('#fb-t'),a=$('#fb-mail');
   const upd=()=>{FB.txt=t.value;a.href=fbLink();a.setAttribute('aria-disabled',FB.txt.trim()?'false':'true')};
   t.addEventListener('input',upd);upd();
-  a.addEventListener('click',e=>{if(!FB.txt.trim()){e.preventDefault();$('#fb-err').textContent='Escribe tu mensaje antes de enviarlo.';return}setTimeout(()=>{toast('Revisa WhatsApp para enviarlo');},300)});
+  a.addEventListener('click',e=>{if(!FB.txt.trim()){e.preventDefault();$('#fb-err').textContent='Escribe tu mensaje antes de enviarlo.';return}setTimeout(()=>{toast('Revisa tu app de correo para enviarlo')},300)});
 }};
-function fbMsg(){const tl={mejora:'Idea o mejora',error:'Algo falla',resena:'Reseña'}[FB.tipo];const nm=(S.perfil.nombre||'').trim();
-  const disp=innerWidth>=900?'computador':'celular';
-  return`ORGANIZADO$ · ${tl}${FB.est?'\n'+'★'.repeat(FB.est)+'☆'.repeat(5-FB.est):''}\n\n${FB.txt.trim()}\n\n— ${nm||'Usuario'} · desde ${disp}`}
-function fbLink(){return`https://wa.me/${WHATSAPP_FREDY}?text=${encodeURIComponent(fbMsg())}`}
+const fbTipoTxt=()=>({mejora:'Idea o mejora',error:'Algo falla',resena:'Reseña'}[FB.tipo]);
+function fbMsg(){const nm=(S.perfil.nombre||'').trim(),d=usoDesde(),dias=Math.max(0,-daysTo(d));
+  const disp=innerWidth>=900?'Computador':'Celular';
+  return`Tipo: ${fbTipoTxt()}${FB.est?'\nCalificación: '+'★'.repeat(FB.est)+'☆'.repeat(5-FB.est)+` (${FB.est} de 5)`:''}\n\n${FB.txt.trim()}\n\n————————————\nNombre: ${nm||'No indicó'}\nUsa ORGANIZADO$ desde: ${dayLabel(d)} ${d.slice(0,4)} (${dias===0?'hoy':dias===1?'hace 1 día':'hace '+dias+' días'})\nDispositivo: ${disp}\nVersión de la app: ${APP_VERSION}`}
+function fbLink(){return`mailto:${CORREO_OPINIONES}?subject=${encodeURIComponent('ORGANIZADO$ · '+fbTipoTxt())}&body=${encodeURIComponent(fbMsg())}`}
 
 /* ============ código de recuperación del PIN ============ */
 const RC_ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
