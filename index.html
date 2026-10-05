@@ -293,6 +293,26 @@ a.btn{text-decoration:none}
 .sheet h3{padding-bottom:12px;border-bottom:1px solid var(--line)}
 @media (min-width:900px){.sheet{border:1px solid var(--line);box-shadow:0 24px 64px rgba(8,10,18,.4)}}
 
+/* Deslizar movimientos */
+.swipe{position:relative;overflow:hidden;border-top:1px solid var(--line)}
+.list>.swipe:first-child{border-top:0}
+.swipe>.mov{border-top:0;background:var(--surface);position:relative;z-index:1;touch-action:pan-y;will-change:transform}
+.swipe>.mov.anim{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.sw-bg{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 22px;font-weight:800;font-size:14px;opacity:0;transition:opacity .1s}
+.sw-edit{left:0;right:40%;background:var(--brand);color:var(--on-brand);justify-content:flex-start}
+.sw-del{right:0;left:40%;background:var(--neg);color:#fff;justify-content:flex-end}
+.swipe.arm .sw-bg{font-size:15px}
+@media (prefers-reduced-motion: reduce){.swipe>.mov.anim{transition:none}}
+/* Novedades */
+.nv{display:grid;gap:14px}
+.nv-v{display:grid;gap:6px}
+.nv-v h4{margin:0;font-family:var(--f-display);font-size:16px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.nv-v h4 small{font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:700}
+.nv-v ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.nv-v li{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:14.5px;line-height:1.4}
+.nv-v li::before{content:"✓";display:grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--pos-soft);color:var(--pos);font-weight:900;font-size:13px}
+.nv-badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:var(--brand-soft);color:var(--brand)}
+
 /* Filas de deudas */
 .drow{padding:12px 0;border-top:1px solid var(--line)}
 .drow:first-child{border-top:0;padding-top:0}
@@ -644,7 +664,7 @@ function alertaTxt(a){return a.x.tipo==='debo'?`Pagar a ${a.x.persona}`:`${a.x.p
 let UI={view:'inicio',month:curMonth(),per:'mes',anMonth:curMonth(),ft:'todos',fc:'',fcat:'',q:'',dTab:'me_deben',pMonth:curMonth(),patPer:'90',patN:30,priv:false};
 try{UI.priv=localStorage.getItem('organizado.priv')==='1'}catch(e){}
 try{const u=JSON.parse(localStorage.getItem(UIKEY)||'null');if(u&&u.view)UI.view=u.view}catch(e){}
-const TITLES={opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
+const TITLES={novedades:'Novedades',opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
 function go(v,o){UI.view=v;if(o)Object.assign(UI,o);try{localStorage.setItem(UIKEY,JSON.stringify({view:v}))}catch(e){}render();window.scrollTo(0,0)}
 
 /* ============ charts ============ */
@@ -667,7 +687,7 @@ function axisX(){return{grid:{display:false},border:{color:tok('--axis')},ticks:
 function rowMov(x){
   const pos=x.m>0,cls=SYS.has(x.cat)?'neu':pos?'pos':'neg';
   const tag=x.r?` · <i class="tag ${x.r==='LUJO'?'lujo':'nec'}">${x.r==='LUJO'?'Lujo':'Necesidad'}</i>`:'';
-  return`<button class="mov" data-act="editMov" data-id="${x.id}"><span class="ico" style="--h:${hue(x.cat)}">${esc(initials(x.cat))}</span><span class="mov-main"><span class="mov-t">${esc(x.con||x.cat)}</span><span class="mov-s">${esc(x.cat)} · ${esc(x.c)}${tag}</span></span><span class="mov-a ${cls}">${pos?'+':''}${fmt(x.m)}</span></button>`;
+  return`<div class="swipe"><span class="sw-bg sw-edit" aria-hidden="true">✎ Editar</span><span class="sw-bg sw-del" aria-hidden="true">Eliminar 🗑</span><button class="mov" data-act="editMov" data-id="${x.id}"><span class="ico" style="--h:${hue(x.cat)}">${esc(initials(x.cat))}</span><span class="mov-main"><span class="mov-t">${esc(x.con||x.cat)}</span><span class="mov-s">${esc(x.cat)} · ${esc(x.c)}${tag}</span></span><span class="mov-a ${cls}">${pos?'+':''}${fmt(x.m)}</span></button></div>`;
 }
 function monthNav(key,act,max){return`<div class="monthnav"><button class="iconbtn" data-act="${act}" data-d="-1" aria-label="Mes anterior">${ICON.prev}</button><b>${monthLabel(key)}</b><button class="iconbtn" data-act="${act}" data-d="1" aria-label="Mes siguiente" ${max&&key>=max?'disabled':''}>${ICON.next}</button></div>`}
 function alertRow(a){const s=deudaSaldo(a.x);return`<button class="alert-row" data-act="verDeuda" data-id="${a.x.id}"><span class="status ${a.d.cls}">${a.d.icon} ${a.d.txt}</span><span class="alert-main"><b>${esc(alertaTxt(a))}</b><small>${dayLabel(a.x.prox)} ${a.x.prox.slice(0,4)}</small></span><span class="num ${a.x.tipo==='debo'?'neg':'pos'}" style="font-weight:800">${fmtC(s)}</span></button>`}
@@ -738,6 +758,7 @@ V.movs={html(){
   </div>
   ${groups.length?groups.map(g=>`<div class="day-h"><span>${dayLabel(g.f)}${q?' '+g.f.slice(0,4):''}</span><span class="num ${g.net>0?'pos':g.net<0?'neg':''}">${g.net?(g.net>0?'+':'')+fmt(g.net):''}</span></div><div class="list">${g.items.map(rowMov).join('')}</div>`).join(''):`<div class="card empty" style="margin-top:14px">No hay movimientos con estos filtros.</div>`}`;
 },mount(){
+  swipeHint();
   const q=$('#q');let tm;q.addEventListener('input',()=>{clearTimeout(tm);tm=setTimeout(()=>{UI.q=q.value;const p=q.selectionStart;render();const n=$('#q');n.focus();try{n.setSelectionRange(p,p)}catch(e){}},250)});
   $('#fc').onchange=e=>{UI.fc=e.target.value;render()};$('#fcat').onchange=e=>{UI.fcat=e.target.value;render()};
 }};
@@ -833,7 +854,7 @@ V.mas={html(){
     ${soon('Interés compuesto','Simula cuánto crece tu ahorro')}
     ${soon('Servicios públicos','Lecturas del contador y costo estimado')}
   </div></div>
-  <div class="stack" style="margin-top:20px"><button class="btn block" data-go="opinion">💬 Envíanos tu opinión o una idea</button><button class="btn block ghost" data-act="tour">Ver la guía de uso</button></div>
+  <div class="stack" style="margin-top:20px"><button class="btn block" data-go="opinion">💬 Envíanos tu opinión o una idea</button><button class="btn block ghost" data-go="novedades">🎉 Novedades · versión ${APP_VERSION}</button><button class="btn block ghost" data-act="tour">Ver la guía de uso</button></div>
   <p class="small muted" style="text-align:center;margin-top:20px">ORGANIZADO$ · prototipo · tus datos se guardan solo en este navegador</p>`;
 }};
 
@@ -1466,7 +1487,9 @@ const ACT={
     offer(`organizado-${stamp()}.xlsx`,new Uint8Array(X.write(wb,{type:'array',bookType:'xlsx'})),$('#exp-err'))}catch(e){$('#exp-err').textContent=e.message}},
   copyJson:el=>{const t=JSON.stringify(S);navigator.clipboard.writeText(t).then(()=>toast('Respaldo copiado. Pégalo en una nota o correo.'),()=>{$('#exp-err').textContent='Tu navegador no dejó copiar. Usa "Descargar respaldo".'})},
 };
+let swipeBlock=0;
 document.addEventListener('click',e=>{
+  if(Date.now()-swipeBlock<450&&e.target.closest('.swipe'))return;
   const g=e.target.closest('[data-go]');if(g&&!g.disabled){const o={};if(g.dataset.hmGo)UI.hmScroll=true;if(g.dataset.dtab)o.dTab=g.dataset.dtab;if(g.dataset.go==='movs'&&g.classList.contains('tab'))Object.assign(o,{});go(g.dataset.go,o);return}
   const a=e.target.closest('[data-act]');if(a&&!a.disabled&&ACT[a.dataset.act]){ACT[a.dataset.act](a)}
 });
@@ -1694,7 +1717,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='1.0.1';
+const APP_VERSION='1.1';
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1722,6 +1745,52 @@ function fbMsg(){const nm=(S.perfil.nombre||'').trim(),d=usoDesde(),dias=Math.ma
   const disp=innerWidth>=900?'Computador':'Celular';
   return`Tipo: ${fbTipoTxt()}${FB.est?'\nCalificación: '+'★'.repeat(FB.est)+'☆'.repeat(5-FB.est)+` (${FB.est} de 5)`:''}\n\n${FB.txt.trim()}\n\n————————————\nNombre: ${nm||'No indicó'}\nUsa ORGANIZADO$ desde: ${dayLabel(d)} ${d.slice(0,4)} (${dias===0?'hoy':dias===1?'hace 1 día':'hace '+dias+' días'})\nDispositivo: ${disp}\nVersión de la app: ${APP_VERSION}`}
 function fbLink(){return`mailto:${CORREO_OPINIONES}?subject=${encodeURIComponent('ORGANIZADO$ · '+fbTipoTxt())}&body=${encodeURIComponent(fbMsg())}`}
+
+/* ============ deslizar para editar / borrar ============ */
+function deleteMovUndo(id){
+  const x=S.movs.find(y=>y.id===id);if(!x)return;
+  const removed=x.t?S.movs.filter(y=>y.t===x.t):[x];
+  S.movs=S.movs.filter(y=>!removed.includes(y));save();render();
+  toast(removed.length>1?'Traspaso eliminado':'Movimiento eliminado',()=>{S.movs.push(...removed);save();render();toast('Movimiento restaurado')});
+}
+(function(){
+  let st=null;const TH=90;
+  const bg=(row,dx)=>{const p=row.parentElement;if(!p)return;const d=p.querySelector('.sw-del'),e=p.querySelector('.sw-edit');if(d)d.style.opacity=dx<0?Math.min(1,-dx/70):0;if(e)e.style.opacity=dx>0?Math.min(1,dx/70):0;p.classList.toggle('arm',Math.abs(dx)>=TH)};
+  document.addEventListener('touchstart',e=>{const row=e.target.closest('.swipe>.mov');if(!row||e.touches.length>1){st=null;return}st={row,x:e.touches[0].clientX,y:e.touches[0].clientY,dx:0,mode:null}},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!st)return;const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
+    if(!st.mode){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;st.mode=Math.abs(dx)>Math.abs(dy)*1.3?'h':'v';if(st.mode==='h')st.row.classList.remove('anim')}
+    if(st.mode!=='h')return;if(e.cancelable)e.preventDefault();
+    const w=st.row.offsetWidth,lim=Math.max(-w*.75,Math.min(w*.75,dx));st.dx=lim;st.row.style.transform=`translateX(${lim}px)`;bg(st.row,lim)},{passive:false});
+  const end=()=>{if(!st)return;const{row,dx,mode}=st;st=null;if(mode!=='h')return;swipeBlock=Date.now();row.classList.add('anim');const id=+row.dataset.id;
+    if(dx<=-TH){row.style.transform='translateX(-110%)';if(navigator.vibrate)try{navigator.vibrate(12)}catch(e){}setTimeout(()=>deleteMovUndo(id),180)}
+    else{row.style.transform='';bg(row,0);if(dx>=TH){const x=S.movs.find(y=>y.id===id);if(x)setTimeout(()=>openMovForm(x),120)}}};
+  document.addEventListener('touchend',end);document.addEventListener('touchcancel',end);
+})();
+function swipeHint(){
+  if(!('ontouchstart' in window))return;let seen=false;try{seen=localStorage.getItem('organizado.swipehint')==='1'}catch(e){}if(seen)return;
+  const row=$('.swipe>.mov');if(!row)return;try{localStorage.setItem('organizado.swipehint','1')}catch(e){}
+  setTimeout(()=>{row.classList.add('anim');row.style.transform='translateX(-70px)';const d=row.parentElement.querySelector('.sw-del');if(d)d.style.opacity=1;
+    setTimeout(()=>{row.style.transform='';if(d)d.style.opacity=0;toast('Tip: desliza ← para borrar y → para editar')},700)},500);
+}
+
+/* ============ novedades de cada versión ============ */
+const CHANGELOG=[
+  {v:'1.1',f:'2026-10-05',items:['En el celular, desliza un movimiento hacia la izquierda para borrarlo (puedes deshacerlo) y hacia la derecha para editarlo.','Cada vez que la app tenga mejoras te mostraremos esta ventana con lo nuevo.','Puedes ver el historial de cambios en Más › Novedades.']},
+  {v:'1.0.1',f:'2026-10-05',items:['Arreglamos el teclado que se cerraba al escribir tu nombre en la bienvenida.']},
+  {v:'1.0',f:'2026-10-05',items:['Primera versión: cartera, movimientos, análisis con gráficos, presupuesto, deudas con recordatorios, patrimonio neto, calculadora de nómina, pagos fijos, atajos, PIN, personalización y modo claro u oscuro.']}];
+const verGt=(a,b)=>{const x=a.split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false};
+function verSeen(){try{return localStorage.getItem('organizado.version')}catch(e){return null}}
+function verMark(){try{localStorage.setItem('organizado.version',APP_VERSION)}catch(e){}}
+function novedadesHTML(list){return`<div class="nv">${list.map(c=>`<div class="nv-v"><h4>Versión ${c.v} <small>${dayLabel(c.f)} ${c.f.slice(0,4)}</small>${c.v===APP_VERSION?'<span class="nv-badge">Actual</span>':''}</h4><ul>${c.items.map(i=>`<li><span>${i}</span></li>`).join('')}</ul></div>`).join('')}</div>`}
+function showNovedades(next){
+  const seen=verSeen()||'1.0.1';verMark();
+  const nuevas=CHANGELOG.filter(c=>verGt(c.v,seen)&&!verGt(c.v,APP_VERSION));
+  if(!nuevas.length){next&&next();return}
+  openSheet(`<h3>🎉 ¡ORGANIZADO$ se actualizó!</h3><p class="small muted" style="margin:-4px 0 14px">Esto es lo nuevo desde la última vez que entraste:</p>${novedadesHTML(nuevas)}
+    <div class="stack" style="margin-top:18px"><button class="btn block" id="nv-ok">¡Genial!</button></div>`,()=>{$('#nv-ok').onclick=()=>{closeSheet();next&&next()}});
+}
+V.novedades={html(){return`<p class="small muted" style="margin:0 0 14px">Estás usando la versión <b>${APP_VERSION}</b>. Aquí está todo lo que ha mejorado.</p><div class="card">${novedadesHTML(CHANGELOG)}</div>
+  <div class="stack" style="margin-top:14px"><button class="btn block ghost" data-go="opinion">💬 ¿Qué te gustaría que agregáramos?</button></div>`}};
 
 /* ============ código de recuperación del PIN ============ */
 const RC_ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -1824,7 +1893,7 @@ const TOUR=[
   {t:'Bienvenido a <span class="tour-logo" style="font-size:inherit">ORGANIZADO<b>$</b></span>',p:'Tu billetera para saber en qué se va la plata. Te mostramos lo básico en 6 pasos; toma menos de un minuto.<br><br>Tus datos se guardan solo en este dispositivo. Nadie más los ve, ni siquiera quien te compartió el link.',name:true},
   {sel:'.fab, .side-add',t:'Registra en segundos',p:'Toca + (en el computador, el botón Registrar o la tecla N) para anotar un gasto, un ingreso o un traspaso entre cuentas. Escribe el monto, elige la categoría y la cuenta, y guarda.'},
   {sel:'.hero',view:'inicio',t:'Tu cartera',p:'Aquí ves cuánto tienes en total, cómo ha cambiado en los últimos 90 días y cuánto entró y salió este mes. Debajo están tus cuentas: toca una para ver sus movimientos.'},
-  {sel:'.tab[data-tab=movs], .snav[data-v=movs]',t:'Movimientos',p:'Todo lo que registras, día por día. Busca, filtra por cuenta o categoría y toca cualquier movimiento para corregirlo o borrarlo.'},
+  {sel:'.tab[data-tab=movs], .snav[data-v=movs]',t:'Movimientos',p:'Todo lo que registras, día por día. Busca y filtra por cuenta o categoría. En el celular, desliza un movimiento a la izquierda para borrarlo o a la derecha para editarlo; también puedes tocarlo.'},
   {sel:'.tab[data-tab=analisis], .snav[data-v=analisis]',t:'Análisis',p:'Gráficos de en qué gastas, ingresos contra gastos, lujo contra necesidad y qué día gastas más. Cambia entre mes, 3 meses, 12 meses o todo.'},
   {sel:'.tab[data-tab=mas], .side-tools',t:'Más herramientas',p:'Patrimonio neto, calculadora de nómina, presupuesto con alertas, deudas con recordatorios de pago, y tus cuentas y categorías.'},
   {t:'¿Por dónde empiezas?',p:'',last:true}];
@@ -1902,9 +1971,9 @@ function renderSide(){
   <nav class="side-nav"><span class="side-h">Principal</span>${b('inicio',T('inicio'),'Cartera')}${b('movs',T('movs'),'Movimientos')}${b('analisis',T('analisis'),'Análisis')}
   <div class="side-tools" style="display:grid;gap:2px"><span class="side-h">Herramientas</span>${b('patrimonio',ICON.pat,'Patrimonio neto')}${b('nomina',ICON.nomina,'Calculadora de nómina')}${b('fijos',ICON.repetir,'Pagos fijos')}${b('presupuesto',ICON.ppto,'Presupuesto')}${b('deudas',ICON.deuda,'Deudas y préstamos','<span class="cnt" hidden></span>')}</div>
   <span class="side-h">Ajustes</span>${b('cuentas',ICON.cuenta,'Cuentas')}${b('categorias',ICON.cat,'Categorías')}${b('atajos',ICON.rayo,'Atajos')}${b('seguridad',ICON.candado,'Seguridad')}${b('perfil',ICON.paleta,'Personalizar')}${b('datos',ICON.datos,'Importar y respaldos')}${b('mas',$('.tab[data-tab=mas] svg').outerHTML,'Más')}${b('opinion','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>','Envíanos tu opinión')}</nav>
-  <p class="side-foot">Tus datos se guardan solo en este navegador. Descarga un respaldo cada semana.</p>`;
+  <p class="side-foot"><button class="link" data-go="novedades">Novedades · v${APP_VERSION}</button><br>Tus datos se guardan solo en este navegador. Descarga un respaldo cada semana.</p>`;
 }
-const NARROW=new Set(['opinion','atajos','fijos','seguridad','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
+const NARROW=new Set(['novedades','opinion','atajos','fijos','seguridad','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
 document.addEventListener('keydown',e=>{if(e.key!=='n'&&e.key!=='N')return;if(e.ctrlKey||e.metaKey||e.altKey||tourOn)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;if(!$('#sheet').hidden)return;e.preventDefault();openMovForm(null)});
 
 /* ============ render ============ */
@@ -1933,7 +2002,7 @@ renderSide();
 (function(){const h=(location.hash||'').slice(1);if(h&&V[h])UI.view=h})();
 applyAppearance();
 function startup(){const n=processFijos();render();if(n)setTimeout(()=>toast(`Se registraron ${n} pago${n>1?'s':''} fijo${n>1?'s':''}`),600);
-  if(!tourSeen())setTimeout(startTour,700);else askNameOnOpen(showAlertsOnOpen)}
+  if(!tourSeen()){verMark();setTimeout(startTour,700)}else askNameOnOpen(()=>showNovedades(showAlertsOnOpen))}
 if(pinGet())showLock(startup);else startup();
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render())}catch(e){}
 new MutationObserver(()=>render()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
