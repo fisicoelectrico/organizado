@@ -241,6 +241,21 @@ details summary::after{content:" ▾";color:var(--muted)}
 details[open] summary::after{content:" ▴"}
 .top .right{display:flex;align-items:center;gap:4px}
 
+/* Saludo y personalización */
+.hello{margin:2px 0 14px}
+.hello h1{font-family:var(--f-display);font-size:26px;font-weight:800;letter-spacing:-.015em;margin:0;line-height:1.15;text-wrap:balance}
+.hello p{margin:3px 0 0;color:var(--muted);font-size:13.5px;font-weight:600}
+.emo{display:inline-block;transform-origin:70% 80%;animation:wave 1.6s ease-in-out .3s 1}
+@keyframes wave{0%,100%{transform:rotate(0)}15%{transform:rotate(16deg)}30%{transform:rotate(-10deg)}45%{transform:rotate(12deg)}60%{transform:rotate(-6deg)}}
+@media (prefers-reduced-motion: reduce){.emo{animation:none}}
+.hero.has-img::before{opacity:.06}
+.hero.has-img .hero-num,.hero.has-img .hero-flow b{text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px}
+.sw{width:44px;height:44px;border-radius:14px;border:3px solid transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);position:relative;cursor:pointer;display:grid;place-items:center}
+.sw[aria-pressed="true"]{border-color:var(--ink)}
+.sw.custom span{color:#fff;font-weight:800;font-size:20px;text-shadow:0 1px 3px rgba(0,0,0,.5);pointer-events:none}
+.sw.custom input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+
 /* Guía */
 .tour{position:fixed;inset:0;z-index:70}
 .tour-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,12,.78);transition:all .28s cubic-bezier(.2,.8,.2,1);pointer-events:none}
@@ -365,6 +380,7 @@ const ICON={
   nomina:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h4"/></svg>',
   eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
   eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+  paleta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.6-1.7 0-1.2-1-1.6-1-2.6 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4-4-7.1-9-7.1z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg>',
   pronto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
 };
 
@@ -380,7 +396,7 @@ function nextId(){S.seq=(S.seq||0)+1;return S.seq}
 
 function blank(){
   const cats=[['Comida','gasto','NECESIDAD'],['Comida afuera','gasto','LUJO'],['Domicilio','gasto','LUJO'],['Café','gasto','LUJO'],['Mecato','gasto','LUJO'],['Transporte','gasto','NECESIDAD'],['Servicios','gasto','NECESIDAD'],['Alquiler','gasto','NECESIDAD'],['Medicina','gasto','NECESIDAD'],['Educación','gasto','NECESIDAD'],['Gimnasio','gasto',null],['Entretenimiento','gasto','LUJO'],['Articulos','gasto',null],['Aseo Personal','gasto','NECESIDAD'],['Mascota','gasto','NECESIDAD'],['Obsequio','gasto','LUJO'],['Inversión','gasto',null],['Pago','gasto',null],['Prestamo','ambos',null],['Sueldo','ingreso',null],['Cobro','ingreso',null],['Ingreso extra','ingreso',null],['Traspaso','sistema',null],['Balance','sistema',null]];
-  return{v:1,demo:false,seq:0,cuentas:[{nombre:'Banco',color:ACCT_COLORS[0]},{nombre:'Billetera digital',color:ACCT_COLORS[1]},{nombre:'Efectivo',color:ACCT_COLORS[2]}],cats:cats.map(([nombre,tipo,realidad])=>({nombre,tipo,realidad})),movs:[],ppto:{},deudas:[],activos:[],pat:{invCosto:false,meta:0},nomina:null};
+  return{v:1,demo:false,seq:0,cuentas:[{nombre:'Banco',color:ACCT_COLORS[0]},{nombre:'Billetera digital',color:ACCT_COLORS[1]},{nombre:'Efectivo',color:ACCT_COLORS[2]}],cats:cats.map(([nombre,tipo,realidad])=>({nombre,tipo,realidad})),movs:[],ppto:{},deudas:[],activos:[],pat:{invCosto:false,meta:0},nomina:null,perfil:perfilDefault()};
 }
 
 /* datos de ejemplo (deterministas) */
@@ -426,7 +442,7 @@ function demo(){
 if(!S||!Array.isArray(S.movs)){S=demo()}
 function migrate(){(S.deudas||[]).forEach(d=>{d.abonos=d.abonos||[];d.abonos.forEach((a,i)=>{if(!a.id)a.id=d.id+'-'+i+'-'+Math.random().toString(36).slice(2,6)});if(d.prox===undefined)d.prox=null})}
 migrate();
-if(!Array.isArray(S.activos))S.activos=[];if(!S.pat)S.pat={invCosto:false,meta:0};
+if(!Array.isArray(S.activos))S.activos=[];if(!S.perfil)S.perfil=perfilDefault();if(!S.pat)S.pat={invCosto:false,meta:0};
 
 /* ============ derivados ============ */
 function der(){
@@ -473,7 +489,7 @@ function alertaTxt(a){return a.x.tipo==='debo'?`Pagar a ${a.x.persona}`:`${a.x.p
 let UI={view:'inicio',month:curMonth(),per:'mes',anMonth:curMonth(),ft:'todos',fc:'',fcat:'',q:'',dTab:'me_deben',pMonth:curMonth(),patPer:'90',patN:30,priv:false};
 try{UI.priv=localStorage.getItem('organizado.priv')==='1'}catch(e){}
 try{const u=JSON.parse(localStorage.getItem(UIKEY)||'null');if(u&&u.view)UI.view=u.view}catch(e){}
-const TITLES={patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
+const TITLES={perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
 function go(v,o){UI.view=v;if(o)Object.assign(UI,o);try{localStorage.setItem(UIKEY,JSON.stringify({view:v}))}catch(e){}render();window.scrollTo(0,0)}
 
 /* ============ charts ============ */
@@ -512,8 +528,8 @@ V.inicio={html(){
   const meDeben=S.deudas.filter(x=>x.tipo==='me_deben').reduce((a,x)=>a+Math.max(0,deudaSaldo(x)),0);
   const debo=S.deudas.filter(x=>x.tipo==='debo').reduce((a,x)=>a+Math.max(0,deudaSaldo(x)),0);
   const al=alertas();
-  return`${al.length?`<div class="card alerts" style="margin-bottom:14px"><div class="prow-top" style="margin-bottom:4px"><b>Pagos por atender</b><span class="small muted">próximos 7 días</span></div>${al.map(alertRow).join('')}</div>`:''}
-  <section class="hero" aria-label="Saldo total">
+  return`${helloHTML()}${al.length?`<div class="card alerts" style="margin-bottom:14px"><div class="prow-top" style="margin-bottom:4px"><b>Pagos por atender</b><span class="small muted">próximos 7 días</span></div>${al.map(alertRow).join('')}</div>`:''}
+  <section class="hero hero-main${S.perfil.img?' has-img':''}" style="${heroStyle()}" aria-label="Saldo total">
     <div class="hero-top"><span class="eyebrow">Saldo total</span><span class="hero-month">${monthLabel(k)}</span></div>
     <div class="hero-num num">${fmt(d.total)}</div>
     <div class="hero-spark"><canvas id="c-spark" aria-label="Saldo de los últimos 90 días"></canvas></div>
@@ -633,6 +649,7 @@ V.mas={html(){
   const it=(go,ic,t,s)=>`<button class="menu-i" data-go="${go}"><span class="mi">${ICON[ic]}</span><div><b>${t}</b><small>${s}</small></div>${ICON.next.replace('<svg','<svg width="18" height="18" style="color:var(--faint)"')}</button>`;
   const soon=(t,s)=>`<button class="menu-i" disabled><span class="mi">${ICON.pronto}</span><div><b>${t}</b><small>${s}</small></div><span class="pill">Pronto</span></button>`;
   return`<div class="card" style="padding:4px 0"><div class="menu">
+    ${it('perfil','paleta','Personalizar','Tu nombre, color e imagen de la tarjeta')}
     ${it('patrimonio','pat','Patrimonio neto','Cuánto vales hoy y tu histórico diario')}
     ${it('nomina','nomina','Calculadora de nómina','Neto, horas extras, deducciones y prestaciones')}
   </div></div>
@@ -711,7 +728,7 @@ mount(){
     try{const X=await loadXLSX();const wb=X.read(new Uint8Array(await f.arrayBuffer()),{type:'array'});const r=parseRegistro(X,wb);$('#imp-err').textContent='';previewImport(r,f.name)}
     catch(err){$('#imp-err').textContent=err.message||'No pude leer el archivo.'}};
   $('#f-json').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
-    try{const o=JSON.parse(await f.text());if(!o||!Array.isArray(o.movs)||!Array.isArray(o.cuentas))throw new Error();o.activos=o.activos||[];o.pat=o.pat||{invCosto:false,meta:0};o.deudas=o.deudas||[];
+    try{const o=JSON.parse(await f.text());if(!o||!Array.isArray(o.movs)||!Array.isArray(o.cuentas))throw new Error();o.activos=o.activos||[];o.pat=o.pat||{invCosto:false,meta:0};o.deudas=o.deudas||[];o.perfil=o.perfil||S.perfil||perfilDefault();
       confirmSheet('Restaurar respaldo',`El respaldo tiene ${o.movs.length.toLocaleString('es-CO')} movimientos. Reemplazará lo que tienes ahora.`,'Restaurar',()=>{S=o;S.demo=false;migrate();save();toast('Respaldo restaurado');go('inicio')})}
     catch(err){$('#exp-err').textContent='Ese archivo no es un respaldo de ORGANIZADO$.'}};
 }};
@@ -1010,7 +1027,7 @@ function previewImport(r,name){
     <p class="small muted">Esto reemplaza los datos que tienes ahora en ORGANIZADO$. Tu archivo de Excel no se modifica.</p>
     <div class="stack"><button class="btn block" id="imp-ok">Importar y reemplazar</button><button class="btn block ghost" data-act="closeSheet">Cancelar</button></div>`,()=>{
     $('#imp-ok').onclick=()=>{const keepP=S.demo?{}:S.ppto,keepD=S.demo?[]:S.deudas;
-      S={v:1,demo:false,seq:r.movs.length,cuentas:r.cuentas,cats:r.cats,movs:r.movs,ppto:keepP,deudas:keepD,activos:S.demo?[]:(S.activos||[]),pat:S.demo?{invCosto:false,meta:0}:(S.pat||{invCosto:false,meta:0}),nomina:S.nomina||null};
+      S={v:1,demo:false,seq:r.movs.length,cuentas:r.cuentas,cats:r.cats,movs:r.movs,ppto:keepP,deudas:keepD,activos:S.demo?[]:(S.activos||[]),pat:S.demo?{invCosto:false,meta:0}:(S.pat||{invCosto:false,meta:0}),nomina:S.nomina||null,perfil:S.perfil||perfilDefault()};
       for(const n of ['Traspaso','Balance'])if(!findCat(n))S.cats.push({nombre:n,tipo:'sistema',realidad:null});
       save();closeSheet();toast(r.movs.length.toLocaleString('es-CO')+' movimientos importados');go('inicio')}});
 }
@@ -1238,6 +1255,8 @@ const ACT={
   editCuenta:el=>cuentaForm(Number(el.dataset.i)),
   editCat:el=>catForm(el.dataset.n||null),
   tour:()=>startTour(),
+  pfTema:el=>{S.perfil.tema=el.dataset.k;persist();render()},
+  pfNoImg:()=>{S.perfil.img=null;persist();render()},
   togglePriv:()=>{UI.priv=!UI.priv;try{localStorage.setItem('organizado.priv',UI.priv?'1':'0')}catch(e){}render()},
   patPer:el=>{UI.patPer=el.dataset.v;render()},
   patMore:()=>{UI.patN+=30;render()},
@@ -1246,8 +1265,8 @@ const ACT={
   nomAddOtro:()=>{NOM().otros.push({n:'',v:0});persist();render()},
   nomDelOtro:el=>{NOM().otros.splice(+el.dataset.i,1);persist();render()},
   nomRegistrar,
-  wipe:()=>confirmSheet('Borrar todo','Se eliminarán todos los movimientos, cuentas, presupuesto y deudas de este navegador. Descarga un respaldo antes si lo necesitas.','Borrar todo',()=>{S=blank();save();toast('Listo, empiezas en blanco');go('inicio')},true),
-  startBlank:()=>confirmSheet('Empezar en blanco','Se quitarán los datos de ejemplo y quedarás con tres cuentas vacías (Banco, Billetera digital y Efectivo) que puedes renombrar.','Empezar',()=>{S=blank();save();go('cuentas')}),
+  wipe:()=>confirmSheet('Borrar todo','Se eliminarán todos los movimientos, cuentas, presupuesto y deudas de este navegador. Descarga un respaldo antes si lo necesitas.','Borrar todo',()=>{const pf=S.perfil;S=blank();S.perfil=pf;save();toast('Listo, empiezas en blanco');go('inicio')},true),
+  startBlank:()=>confirmSheet('Empezar en blanco','Se quitarán los datos de ejemplo y quedarás con tres cuentas vacías (Banco, Billetera digital y Efectivo) que puedes renombrar.','Empezar',()=>{const pf=S.perfil;S=blank();S.perfil=pf;save();go('cuentas')}),
   expJson:()=>offer(`organizado-respaldo-${stamp()}.json`,JSON.stringify(S),$('#exp-err')),
   expCsv:()=>{const rows=[['fecha','cuenta','categoria','concepto','monto','tipo','clasificacion']].concat(movsForExport().map(x=>[x.f,x.c,x.cat,x.con,String(x.m).replace('.',','),SYS.has(x.cat)?'Interno':x.m>0?'Ingreso':'Egreso',x.r||'']));
     offer(`organizado-movimientos-${stamp()}.csv`,'﻿'+rows.map(r=>r.map(v=>/[;"\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v).join(';')).join('\r\n'),$('#exp-err'))},
@@ -1261,14 +1280,62 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet()});
 
+/* ============ personalización ============ */
+const EMOJIS=['👋','😄','🚀','💪','🌞','✨','🤑','💸','🎯','🔥','🌱','😎','🙌','💰','🍀','⭐','🦾','🎉','🌈','☕','🧠','🏆','🌻','🥳'];
+const EMO=EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+const HERO_THEMES={indigo:['Índigo','#1D285A','#33448F'],oceano:['Océano','#0B3550','#1A6E92'],esmeralda:['Esmeralda','#0B3B33','#14715F'],ciruela:['Ciruela','#2E1747','#5E3591'],vino:['Vino','#4A1426','#8A2B47'],atardecer:['Atardecer','#5A1E14','#B5542A'],grafito:['Grafito','#1C1F26','#3E4452']};
+function perfilDefault(){return{nombre:'',tema:'indigo',color:null,img:null,osc:45}}
+function mixHex(h,t,k){const n=parseInt(h.slice(1),16),a=[n>>16&255,n>>8&255,n&255],b=t==='#000'?[0,0,0]:[255,255,255];return'#'+a.map((v,i)=>Math.round(v+(b[i]-v)*k).toString(16).padStart(2,'0')).join('')}
+function lum(h){const n=parseInt(h.slice(1),16);return(0.299*(n>>16&255)+0.587*(n>>8&255)+0.114*(n&255))/255}
+function heroColors(){const pf=S.perfil;if(pf.tema==='custom'&&pf.color){const L=lum(pf.color);return[mixHex(pf.color,'#000',L>.55?.62:.45),mixHex(pf.color,'#000',L>.55?.32:.08)]}const t=HERO_THEMES[pf.tema]||HERO_THEMES.indigo;return[t[1],t[2]]}
+function heroStyle(){const pf=S.perfil,[a,b]=heroColors();let st=`--hero-a:${a};--hero-b:${b};`;if(pf.img){const o=(pf.osc/100).toFixed(2);st+=`background-image:linear-gradient(rgba(0,0,0,${o}),rgba(0,0,0,${o})),url(${pf.img});background-size:cover;background-position:center;`}return st}
+function saludo(){const h=new Date().getHours();return h>=5&&h<12?'Buenos días':h>=12&&h<19?'Buenas tardes':'Buenas noches'}
+function fechaLarga(){const d=new Date();return`${['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`}
+function helloHTML(){const n=(S.perfil.nombre||'').trim();return`<div class="hello"><h1>Hola${n?', '+esc(n):''} <span class="emo" aria-hidden="true">${EMO}</span></h1><p>${saludo()} · ${fechaLarga()}</p></div>`}
+function heroPreview(){const d=der();return`<section class="hero hero-main${S.perfil.img?' has-img':''}" style="${heroStyle()}" aria-label="Vista previa de la tarjeta"><div class="hero-top"><span class="eyebrow">Saldo total</span><span class="hero-month">${monthLabel(curMonth())}</span></div><div class="hero-num num">${fmt(d.total)}</div><div class="hero-flow" style="margin-top:14px"><div><span>Entró</span><b>+${fmtC(monthStats(curMonth()).ing)}</b></div><div><span>Salió</span><b>−${fmtC(monthStats(curMonth()).egr)}</b></div><div><span>Vista previa</span><b>✓</b></div></div></section>`}
+V.perfil={html(){const pf=S.perfil;
+  return`<div class="card"><label class="field"><span>Tu nombre o alias</span><input class="inp" id="pf-n" value="${esc(pf.nombre)}" maxlength="24" placeholder="Ej. Fredy" autocomplete="given-name"></label><p class="small muted" style="margin:8px 0 0">Aparece en el saludo de la cartera, con un emoji distinto cada vez que abres la app.</p></div>
+  <div class="sec-h"><h2>Tarjeta de inicio</h2></div>
+  <div id="pf-prev">${heroPreview()}</div>
+  <div class="card" style="margin-top:12px"><div class="form">
+    <div class="field"><span>Color</span><div class="swatches">${Object.entries(HERO_THEMES).map(([k,[l,a,b]])=>`<button class="sw" data-act="pfTema" data-k="${k}" aria-pressed="${pf.tema===k}" aria-label="${l}" title="${l}" style="background:linear-gradient(135deg,${a},${b})"></button>`).join('')}<label class="sw custom" aria-pressed="${pf.tema==='custom'}" title="Elegir otro color" style="background:${pf.color||'conic-gradient(#e34948,#eda100,#1baf7a,#2a78d6,#9085e9,#e34948)'}"><input type="color" id="pf-c" value="${pf.color||'#2a78d6'}" aria-label="Elegir otro color"><span>+</span></label></div></div>
+    <div class="field"><span>Imagen de fondo</span><div class="row2"><label class="btn ghost" for="pf-img">${pf.img?'Cambiar imagen':'Elegir imagen'}</label>${pf.img?'<button class="btn ghost" data-act="pfNoImg" style="color:var(--neg)">Quitar imagen</button>':'<span></span>'}</div><input type="file" id="pf-img" accept="image/*" hidden><p class="err" id="pf-err" style="margin:0"></p></div>
+    ${pf.img?`<label class="field"><span>Oscurecer la imagen para leer mejor: <b id="pf-ov">${pf.osc}%</b></span><input type="range" id="pf-o" min="0" max="80" step="5" value="${pf.osc}" style="width:100%;accent-color:var(--brand)"></label>`:''}
+    <p class="small muted" style="margin:0">La imagen se guarda reducida dentro de la app, en este dispositivo, y viaja en tus respaldos.</p>
+  </div></div>`},
+mount(){const pf=S.perfil;
+  $('#pf-n').addEventListener('input',e=>{pf.nombre=e.target.value.slice(0,24);persist()});
+  const prev=()=>{$('#pf-prev').innerHTML=heroPreview()};
+  const c=$('#pf-c');c.addEventListener('input',()=>{pf.color=c.value;pf.tema='custom';persist();prev();c.parentElement.style.background=c.value;$$('.sw').forEach(s=>s.setAttribute('aria-pressed',s===c.parentElement))});
+  const o=$('#pf-o');if(o)o.addEventListener('input',()=>{pf.osc=+o.value;$('#pf-ov').textContent=o.value+'%';persist();prev()});
+  $('#pf-img').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;$('#pf-err').textContent='Procesando imagen…';
+    try{pf.img=await shrinkImage(f);persist();$('#pf-err').textContent='';render();toast('Imagen aplicada')}catch(err){$('#pf-err').textContent='No pude abrir esa imagen. Prueba con una foto JPG o PNG.'}};
+}};
+function shrinkImage(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{try{const max=1280,k=Math.min(1,max/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+    let q=.82,d=cv.toDataURL('image/jpeg',q);while(d.length>700000&&q>.4){q-=.12;d=cv.toDataURL('image/jpeg',q)}URL.revokeObjectURL(url);res(d)}catch(e){rej(e)}};
+  im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('img'))};im.src=url})}
+function askNameOnOpen(next){
+  let asked=false;try{asked=localStorage.getItem('organizado.askname')==='1'}catch(e){}
+  if(S.perfil.nombre||asked){next();return}
+  try{localStorage.setItem('organizado.askname','1')}catch(e){}
+  openSheet(`<h3>¿Cómo te llamamos? <span aria-hidden="true">${EMO}</span></h3><div class="form"><label class="field"><span>Tu nombre o alias</span><input class="inp" id="an-n" maxlength="24" placeholder="Ej. Fredy" autocomplete="given-name"></label>
+    <button class="btn block" id="an-ok">Guardar</button><button class="btn block ghost" id="an-no">Ahora no</button></div>`,()=>{
+    setTimeout(()=>$('#an-n')&&$('#an-n').focus(),250);
+    const done=()=>{closeSheet();render();next()};
+    $('#an-ok').onclick=()=>{S.perfil.nombre=$('#an-n').value.trim().slice(0,24);persist();done()};
+    $('#an-n').onkeydown=e=>{if(e.key==='Enter')$('#an-ok').click()};
+    $('#an-no').onclick=done});
+}
+
 /* ============ guía de uso ============ */
 const TOUR=[
-  {t:'Bienvenido a <span class="tour-logo" style="font-size:inherit">ORGANIZADO<b>$</b></span>',p:'Tu billetera para saber en qué se va la plata. Te mostramos lo básico en 6 pasos; toma menos de un minuto.<br><br>Tus datos se guardan solo en este dispositivo. Nadie más los ve, ni siquiera quien te compartió el link.'},
-  {sel:'.fab',t:'Registra en segundos',p:'Toca + para anotar un gasto, un ingreso o un traspaso entre cuentas. Escribe el monto, elige la categoría y la cuenta, y guarda.'},
+  {t:'Bienvenido a <span class="tour-logo" style="font-size:inherit">ORGANIZADO<b>$</b></span>',p:'Tu billetera para saber en qué se va la plata. Te mostramos lo básico en 6 pasos; toma menos de un minuto.<br><br>Tus datos se guardan solo en este dispositivo. Nadie más los ve, ni siquiera quien te compartió el link.',name:true},
+  {sel:'.fab',t:'Registra en segundos',p:'Toca + para anotar un gasto, un ingreso o un traspaso entre cuentas. Escribe el monto, elige la categoría, la cuenta, y guarda.'},
   {sel:'.hero',view:'inicio',t:'Tu cartera',p:'Aquí ves cuánto tienes en total, cómo ha cambiado en los últimos 90 días y cuánto entró y salió este mes. Debajo están tus cuentas: toca una para ver sus movimientos.'},
   {sel:'.tab[data-tab=movs]',t:'Movimientos',p:'Todo lo que registras, día por día. Busca, filtra por cuenta o categoría y toca cualquier movimiento para corregirlo o borrarlo.'},
   {sel:'.tab[data-tab=analisis]',t:'Análisis',p:'Gráficos de en qué gastas, ingresos contra gastos, lujo contra necesidad y qué día gastas más. Cambia entre mes, 3 meses, 12 meses o todo.'},
-  {sel:'.tab[data-tab=mas]',t:'Más herramientas',p:'Patrimonio neto, calculadora de nómina, presupuesto con alertas, deudas con recordatorios de pago, y tus cuentas y categorías.'},
+  {sel:'.tab[data-tab=mas]',t:'Más herramientas',p:'Patrimonio neto, calculadora de nómina, presupuesto con alertas, deudas con recordatorios de pago, tus cuentas y categorías.'},
   {t:'¿Por dónde empiezas?',p:'',last:true}];
 let tourI=0,tourOn=false;
 function tourSeen(){try{return localStorage.getItem('organizado.tour')==='1'}catch(e){return false}}
@@ -1286,23 +1353,24 @@ function drawTour(){
       <div class="stack" style="gap:8px;margin-top:4px"><button class="btn block" data-tour="excel">Importar mi Excel</button><button class="btn block ghost" data-tour="blank">Empezar en blanco</button><button class="btn block ghost" data-tour="demo">Seguir viendo el ejemplo</button></div>
       <p class="small">Consejo: descarga un respaldo cada semana. Si borras los datos del navegador o cambias de celular, es la única forma de recuperarlos.</p>`
       :`<p>Ya tienes tus datos cargados. Recuerda descargar un respaldo cada semana desde <b>Más › Importar y respaldos</b>.</p><div class="tour-row"><span></span><button class="btn" data-tour="done">Listo</button></div>`;
-  }else body=`<p>${st.p}</p><div class="tour-row"><button class="link" data-tour="skip" style="color:var(--muted)">Saltar guía</button><div style="display:flex;gap:8px">${tourI>0?'<button class="btn ghost sm" data-tour="prev">Atrás</button>':''}<button class="btn sm" data-tour="next">${tourI===0?'Empezar':'Siguiente'}</button></div></div>`;
+  }else body=`<p>${st.p}</p>${st.name?`<label class="field"><span style="font-size:12.5px;font-weight:700;color:var(--muted)">¿Cómo te llamamos?</span><input class="inp" id="tour-name" maxlength="24" placeholder="Tu nombre o alias" value="${esc(S.perfil.nombre)}" autocomplete="given-name"></label>`:''}<div class="tour-row"><button class="link" data-tour="skip" style="color:var(--muted)">Saltar guía</button><div style="display:flex;gap:8px">${tourI>0?'<button class="btn ghost sm" data-tour="prev">Atrás</button>':''}<button class="btn sm" data-tour="next">${tourI===0?'Empezar':'Siguiente'}</button></div></div>`;
   card.innerHTML=`${dots}<h3 id="tour-t">${st.t}</h3>${body}`;
   card.style.top=card.style.bottom='';
   if(el){const r=el.getBoundingClientRect(),pd=6;
     Object.assign(hole.style,{left:(r.left-pd)+'px',top:(r.top-pd)+'px',width:(r.width+pd*2)+'px',height:(r.height+pd*2)+'px'});hole.classList.add('ring');
     if(r.top+r.height/2>innerHeight/2)card.style.bottom=(innerHeight-r.top+pd+14)+'px';else card.style.top=(r.bottom+pd+14)+'px';
   }else{Object.assign(hole.style,{left:'50%',top:'50%',width:'0px',height:'0px'});hole.classList.remove('ring');card.style.top=Math.max(24,(innerHeight-card.offsetHeight)/2)+'px'}
-  const f=$('[data-tour=next],[data-tour=excel],[data-tour=done]',card);if(f)f.focus({preventScroll:true});
+  const f=$('#tour-name',card)||$('[data-tour=next],[data-tour=excel],[data-tour=done]',card);if(f&&f.id!=='tour-name')f.focus({preventScroll:true});
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-tour]');if(!b)return;e.stopPropagation();const a=b.dataset.tour;
-  if(a==='next'){tourI=Math.min(TOUR.length-1,tourI+1);drawTour()}
+  const tn=$('#tour-name');if(tn){S.perfil.nombre=tn.value.trim().slice(0,24);persist();try{localStorage.setItem('organizado.askname','1')}catch(e){}}
+  if(a==='next'){tourI=Math.min(TOUR.length-1,tourI+1);render();drawTour()}
   else if(a==='prev'){tourI=Math.max(0,tourI-1);drawTour()}
   else if(a==='skip'||a==='done'||a==='demo')endTour();
   else if(a==='excel')endTour(()=>go('datos'));
-  else if(a==='blank')endTour(()=>{S=blank();save();go('cuentas');toast('Renombra tus cuentas y agrega las que te falten')});
+  else if(a==='blank')endTour(()=>{const pf=S.perfil;S=blank();S.perfil=pf;save();go('cuentas');toast('Renombra tus cuentas y agrega las que te falten')});
 },true);
-document.addEventListener('keydown',e=>{if(!tourOn)return;if(e.key==='Escape')endTour();else if(e.key==='ArrowRight'&&!TOUR[tourI].last){tourI++;drawTour()}else if(e.key==='ArrowLeft'&&tourI>0){tourI--;drawTour()}});
+document.addEventListener('keydown',e=>{if(!tourOn)return;if(e.key==='Escape')endTour();else if(e.target&&e.target.tagName==='INPUT'){if(e.key==='Enter'){const nb=$('[data-tour=next]');if(nb)nb.click()}return}else if(e.key==='ArrowRight'&&!TOUR[tourI].last){tourI++;drawTour()}else if(e.key==='ArrowLeft'&&tourI>0){tourI--;drawTour()}});
 addEventListener('resize',()=>{if(tourOn)drawTour()});
 
 /* ============ aviso al abrir ============ */
@@ -1339,7 +1407,7 @@ function render(){
 }
 (function(){const h=(location.hash||'').slice(1);if(h&&V[h])UI.view=h})();
 render();
-if(!tourSeen())setTimeout(startTour,700);else showAlertsOnOpen();
+if(!tourSeen())setTimeout(startTour,700);else askNameOnOpen(showAlertsOnOpen);
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render())}catch(e){}
 new MutationObserver(()=>render()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(charts.length)render()});
