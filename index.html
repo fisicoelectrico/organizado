@@ -293,6 +293,13 @@ a.btn{text-decoration:none}
 .sheet h3{padding-bottom:12px;border-bottom:1px solid var(--line)}
 @media (min-width:900px){.sheet{border:1px solid var(--line);box-shadow:0 24px 64px rgba(8,10,18,.4)}}
 
+/* Nueva categoría en el formulario */
+.chip-new{border-style:dashed;border-color:var(--brand);color:var(--brand);font-weight:800}
+.sheet .chip-new:not([aria-pressed="true"]){border:1.5px dashed var(--brand);background:transparent}
+.newcat{display:grid;gap:10px;margin-top:10px;padding:12px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand-soft)}
+.newcat .seg{background:var(--surface)}
+.newcat .seg button[aria-pressed="true"]{background:var(--brand-soft);color:var(--brand)}
+
 /* Deslizar movimientos */
 .swipe{position:relative;overflow:hidden;border-top:1px solid var(--line)}
 .list>.swipe:first-child{border-top:0}
@@ -1254,7 +1261,12 @@ function renderMovForm(){
     ${F.sys&&m!=='traspaso'?`<p class="small muted" style="margin:0">Movimiento interno (${esc(F.cat)}).</p>`:`<div class="seg" role="group" aria-label="Tipo">${[['gasto','Gasto'],['ingreso','Ingreso'],['traspaso','Traspaso']].map(([v,l])=>`<button data-fm="${v}" aria-pressed="${m===v}" ${ed&&(m==='traspaso')!==(v==='traspaso')?'disabled':''}>${l}</button>`).join('')}</div>`}
     <div class="amount ${m==='gasto'?'neg':m==='ingreso'?'pos':''}"><span>$</span><input id="f-monto" inputmode="decimal" autocomplete="off" placeholder="0" value="${F.monto?fmtTyping(String(F.monto).replace('.',',')):''}" aria-label="Monto"></div>
     ${m==='traspaso'?acc('c','Sale de')+acc('c2','Entra a'):`
-    ${F.sys?'':`<div class="field"><span>Categoría</span><div class="chips">${shown.map(c=>`<button class="chip" data-fcat="${esc(c.nombre)}" aria-pressed="${F.cat===c.nombre}">${esc(c.nombre)}</button>`).join('')}${!F.all&&cats.length>12?`<button class="chip" data-fall="1">Ver todas (${cats.length})</button>`:''}</div></div>`}
+    ${F.sys?'':`<div class="field"><span>Categoría</span><div class="chips">${shown.map(c=>`<button class="chip" data-fcat="${esc(c.nombre)}" aria-pressed="${F.cat===c.nombre}">${esc(c.nombre)}</button>`).join('')}${!F.all&&cats.length>12?`<button class="chip" data-fall="1">Ver todas (${cats.length})</button>`:''}${F.newCat?'':'<button class="chip chip-new" data-fnew="1">+ Nueva</button>'}</div>
+      ${F.newCat?`<div class="newcat"><b class="small">Nueva categoría de ${m==='ingreso'?'ingreso':'gasto'}</b>
+        <input class="inp" id="f-nc" maxlength="30" placeholder="${m==='ingreso'?'Ej. Freelance, Arriendo recibido':'Ej. Mascota, Regalos, Peluquería'}" value="${esc(F.ncName||'')}" autocomplete="off">
+        ${m==='gasto'?`<div class="seg" role="group" aria-label="Clasificación por defecto">${[['','Sin clasificar'],['NECESIDAD','Necesidad'],['LUJO','Lujo']].map(([v,l])=>`<button data-ncr="${v}" aria-pressed="${(F.ncR||'')===v}">${l}</button>`).join('')}</div>`:''}
+        <p class="err" id="f-nc-err" style="margin:0"></p>
+        <div class="row2"><button class="btn sm" id="f-nc-ok">Crear y usar</button><button class="btn sm ghost" id="f-nc-x">Cancelar</button></div></div>`:''}</div>`}
     ${acc('c','Cuenta')}`}
     <label class="field"><span>Concepto</span><input class="inp" id="f-con" list="f-sug" placeholder="${m==='traspaso'?'Ej. Banco a efectivo':'Ej. Almuerzo'}" value="${esc(F.con)}" autocomplete="off"><datalist id="f-sug">${conSuggest().map(s=>`<option value="${esc(s)}">`).join('')}</datalist></label>
     <div class="row2"><label class="field"><span>Fecha</span><input class="inp" type="date" id="f-f" value="${F.f}" max="${addDays(today(),366)}"></label>
@@ -1268,9 +1280,24 @@ function renderMovForm(){
   mi.oninput=()=>{const p=mi.value.length-mi.selectionStart;mi.value=fmtTyping(mi.value);F.monto=parseAmt(mi.value);fit();const np=Math.max(0,mi.value.length-p);try{mi.setSelectionRange(np,np)}catch(e){}};
   if(!ed&&!F.monto)setTimeout(()=>mi.focus(),250);
   $('#f-con').oninput=e=>F.con=e.target.value;$('#f-f').onchange=e=>F.f=e.target.value||today();
-  $$('[data-fm]',b).forEach(el=>el.onclick=()=>{F.mode=el.dataset.fm;F.cat='';F.r=null;renderMovForm()});
+  $$('[data-fm]',b).forEach(el=>el.onclick=()=>{F.mode=el.dataset.fm;F.cat='';F.r=null;F.newCat=false;renderMovForm()});
   $$('[data-fcat]',b).forEach(el=>el.onclick=()=>{F.cat=el.dataset.fcat;const c=catOf(F.cat);if(F.mode==='gasto')F.r=c&&c.realidad||null;renderMovForm()});
   $$('[data-fall]',b).forEach(el=>el.onclick=()=>{F.all=true;renderMovForm()});
+  $$('[data-fnew]',b).forEach(el=>el.onclick=()=>{F.newCat=true;F.ncName='';F.ncR='';renderMovForm();setTimeout(()=>{const i=$('#f-nc');if(i){i.focus();i.scrollIntoView({block:'center',behavior:'smooth'})}},60)});
+  const nc=$('#f-nc');if(nc){
+    nc.oninput=()=>F.ncName=nc.value;
+    $$('[data-ncr]',b).forEach(el=>el.onclick=()=>{F.ncName=nc.value;F.ncR=el.dataset.ncr;renderMovForm();const i=$('#f-nc');if(i)i.focus()});
+    const crear=()=>{const n=nc.value.trim().replace(/\s+/g,' ');if(!n){$('#f-nc-err').textContent='Escribe el nombre de la categoría.';return}
+      const ex=findCat(n);
+      if(ex){if(ex.tipo==='sistema'){$('#f-nc-err').textContent='Ese nombre lo usa la app internamente. Elige otro.';return}
+        if(F.mode==='ingreso'&&ex.tipo==='gasto'||F.mode==='gasto'&&ex.tipo==='ingreso')ex.tipo='ambos';
+        F.cat=ex.nombre;if(F.mode==='gasto')F.r=ex.realidad||null;F.newCat=false;save();renderMovForm();toast('Ya existía: la seleccioné');return}
+      const nombre=n.charAt(0).toUpperCase()+n.slice(1),realidad=F.mode==='gasto'?(F.ncR||null):null;
+      S.cats.push({nombre,tipo:F.mode==='ingreso'?'ingreso':'gasto',realidad});save();
+      F.cat=nombre;if(F.mode==='gasto')F.r=realidad;F.newCat=false;F.ncName='';renderMovForm();toast(`Categoría "${nombre}" creada`)};
+    $('#f-nc-ok').onclick=crear;nc.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();crear()}};
+    $('#f-nc-x').onclick=()=>{F.newCat=false;renderMovForm()};
+  }
   $$('[data-fc]',b).forEach(el=>el.onclick=()=>{F[el.dataset.fc]=el.dataset.v;renderMovForm()});
   $$('[data-fr]',b).forEach(el=>el.onclick=()=>{F.r=F.r===el.dataset.fr?null:el.dataset.fr;renderMovForm()});
   $('#f-save').onclick=saveMov;
@@ -1717,7 +1744,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='1.1';
+const APP_VERSION='1.2';
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1775,6 +1802,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'1.2',f:'2026-10-05',items:['Crea categorías nuevas directamente al registrar un gasto o ingreso, con el botón “+ Nueva” al final de las categorías.','La categoría queda seleccionada y no se pierde lo que ya habías escrito. Para editarlas o borrarlas sigue estando Más › Categorías.']},
   {v:'1.1',f:'2026-10-05',items:['En el celular, desliza un movimiento hacia la izquierda para borrarlo (puedes deshacerlo) y hacia la derecha para editarlo.','Cada vez que la app tenga mejoras te mostraremos esta ventana con lo nuevo.','Puedes ver el historial de cambios en Más › Novedades.']},
   {v:'1.0.1',f:'2026-10-05',items:['Arreglamos el teclado que se cerraba al escribir tu nombre en la bienvenida.']},
   {v:'1.0',f:'2026-10-05',items:['Primera versión: cartera, movimientos, análisis con gráficos, presupuesto, deudas con recordatorios, patrimonio neto, calculadora de nómina, pagos fijos, atajos, PIN, personalización y modo claro u oscuro.']}];
