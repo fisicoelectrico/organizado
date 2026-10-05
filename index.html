@@ -241,6 +241,22 @@ details summary::after{content:" ▾";color:var(--muted)}
 details[open] summary::after{content:" ▴"}
 .top .right{display:flex;align-items:center;gap:4px}
 
+/* Guía */
+.tour{position:fixed;inset:0;z-index:70}
+.tour-hole{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(4,6,12,.78);transition:all .28s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.tour-hole.ring{outline:2px solid var(--hero-gold);outline-offset:3px}
+.tour-block{position:fixed;inset:0}
+.tour-card{position:fixed;left:16px;right:16px;max-width:420px;margin:0 auto;background:var(--surface);color:var(--ink);border-radius:20px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.3);display:grid;gap:10px;transition:top .28s,bottom .28s}
+.tour-card h3{font-family:var(--f-display);font-size:19px;margin:0;text-wrap:balance}
+.tour-card p{margin:0;font-size:14.5px;color:var(--muted)}
+.tour-dots{display:flex;gap:5px}
+.tour-dots i{width:7px;height:7px;border-radius:9px;background:var(--line)}
+.tour-dots i.on{width:20px;background:var(--brand)}
+.tour-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px}
+.tour-logo{font-family:var(--f-display);font-weight:800;font-size:26px}
+.tour-logo b{color:var(--gold)}
+@media (prefers-reduced-motion: reduce){.tour-hole,.tour-card{transition:none}}
+
 /* Más menu */
 .menu{display:grid}
 .menu-i{display:flex;align-items:center;gap:14px;padding:14px;border-top:1px solid var(--line);text-align:left;width:100%}
@@ -305,6 +321,7 @@ details[open] summary::after{content:" ▴"}
   <div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheet-body"></div></div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="tour" id="tour" hidden><div class="tour-block"></div><div class="tour-hole" id="tour-hole"></div><div class="tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script>
@@ -633,6 +650,7 @@ V.mas={html(){
     ${soon('Interés compuesto','Simula cuánto crece tu ahorro')}
     ${soon('Servicios públicos','Lecturas del contador y costo estimado')}
   </div></div>
+  <div class="stack" style="margin-top:20px"><button class="btn block ghost" data-act="tour">Ver la guía de uso</button></div>
   <p class="small muted" style="text-align:center;margin-top:20px">ORGANIZADO$ · prototipo · tus datos se guardan solo en este navegador</p>`;
 }};
 
@@ -1219,6 +1237,7 @@ const ACT={
   newCuenta:()=>cuentaForm(null),
   editCuenta:el=>cuentaForm(Number(el.dataset.i)),
   editCat:el=>catForm(el.dataset.n||null),
+  tour:()=>startTour(),
   togglePriv:()=>{UI.priv=!UI.priv;try{localStorage.setItem('organizado.priv',UI.priv?'1':'0')}catch(e){}render()},
   patPer:el=>{UI.patPer=el.dataset.v;render()},
   patMore:()=>{UI.patN+=30;render()},
@@ -1241,6 +1260,50 @@ document.addEventListener('click',e=>{
   const a=e.target.closest('[data-act]');if(a&&!a.disabled&&ACT[a.dataset.act]){ACT[a.dataset.act](a)}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet()});
+
+/* ============ guía de uso ============ */
+const TOUR=[
+  {t:'Bienvenido a <span class="tour-logo" style="font-size:inherit">ORGANIZADO<b>$</b></span>',p:'Tu billetera para saber en qué se va la plata. Te mostramos lo básico en 6 pasos; toma menos de un minuto.<br><br>Tus datos se guardan solo en este dispositivo. Nadie más los ve, ni siquiera quien te compartió el link.'},
+  {sel:'.fab',t:'Registra en segundos',p:'Toca + para anotar un gasto, un ingreso o un traspaso entre cuentas. Escribe el monto, elige la categoría y la cuenta, y guarda.'},
+  {sel:'.hero',view:'inicio',t:'Tu cartera',p:'Aquí ves cuánto tienes en total, cómo ha cambiado en los últimos 90 días y cuánto entró y salió este mes. Debajo están tus cuentas: toca una para ver sus movimientos.'},
+  {sel:'.tab[data-tab=movs]',t:'Movimientos',p:'Todo lo que registras, día por día. Busca, filtra por cuenta o categoría y toca cualquier movimiento para corregirlo o borrarlo.'},
+  {sel:'.tab[data-tab=analisis]',t:'Análisis',p:'Gráficos de en qué gastas, ingresos contra gastos, lujo contra necesidad y qué día gastas más. Cambia entre mes, 3 meses, 12 meses o todo.'},
+  {sel:'.tab[data-tab=mas]',t:'Más herramientas',p:'Patrimonio neto, calculadora de nómina, presupuesto con alertas, deudas con recordatorios de pago, y tus cuentas y categorías.'},
+  {t:'¿Por dónde empiezas?',p:'',last:true}];
+let tourI=0,tourOn=false;
+function tourSeen(){try{return localStorage.getItem('organizado.tour')==='1'}catch(e){return false}}
+function startTour(){closeSheet();tourOn=true;tourI=0;if(UI.view!=='inicio')go('inicio');$('#tour').hidden=false;document.body.style.overflow='hidden';drawTour()}
+function endTour(after){tourOn=false;$('#tour').hidden=true;document.body.style.overflow='';try{localStorage.setItem('organizado.tour','1')}catch(e){}if(after)after();else showAlertsOnOpen()}
+function drawTour(){
+  const st=TOUR[tourI],hole=$('#tour-hole'),card=$('#tour-card');
+  if(st.view&&UI.view!==st.view)go(st.view);
+  let el=st.sel?$(st.sel):null;
+  if(el){el.scrollIntoView({block:'center',behavior:'instant'});}
+  const dots=`<div class="tour-dots" aria-hidden="true">${TOUR.map((_,i)=>`<i class="${i===tourI?'on':''}"></i>`).join('')}</div>`;
+  let body;
+  if(st.last){
+    body=S.demo?`<p>Elige cómo quieres arrancar. Puedes cambiar de opinión después desde <b>Más › Importar y respaldos</b>.</p>
+      <div class="stack" style="gap:8px;margin-top:4px"><button class="btn block" data-tour="excel">Importar mi Excel</button><button class="btn block ghost" data-tour="blank">Empezar en blanco</button><button class="btn block ghost" data-tour="demo">Seguir viendo el ejemplo</button></div>
+      <p class="small">Consejo: descarga un respaldo cada semana. Si borras los datos del navegador o cambias de celular, es la única forma de recuperarlos.</p>`
+      :`<p>Ya tienes tus datos cargados. Recuerda descargar un respaldo cada semana desde <b>Más › Importar y respaldos</b>.</p><div class="tour-row"><span></span><button class="btn" data-tour="done">Listo</button></div>`;
+  }else body=`<p>${st.p}</p><div class="tour-row"><button class="link" data-tour="skip" style="color:var(--muted)">Saltar guía</button><div style="display:flex;gap:8px">${tourI>0?'<button class="btn ghost sm" data-tour="prev">Atrás</button>':''}<button class="btn sm" data-tour="next">${tourI===0?'Empezar':'Siguiente'}</button></div></div>`;
+  card.innerHTML=`${dots}<h3 id="tour-t">${st.t}</h3>${body}`;
+  card.style.top=card.style.bottom='';
+  if(el){const r=el.getBoundingClientRect(),pd=6;
+    Object.assign(hole.style,{left:(r.left-pd)+'px',top:(r.top-pd)+'px',width:(r.width+pd*2)+'px',height:(r.height+pd*2)+'px'});hole.classList.add('ring');
+    if(r.top+r.height/2>innerHeight/2)card.style.bottom=(innerHeight-r.top+pd+14)+'px';else card.style.top=(r.bottom+pd+14)+'px';
+  }else{Object.assign(hole.style,{left:'50%',top:'50%',width:'0px',height:'0px'});hole.classList.remove('ring');card.style.top=Math.max(24,(innerHeight-card.offsetHeight)/2)+'px'}
+  const f=$('[data-tour=next],[data-tour=excel],[data-tour=done]',card);if(f)f.focus({preventScroll:true});
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-tour]');if(!b)return;e.stopPropagation();const a=b.dataset.tour;
+  if(a==='next'){tourI=Math.min(TOUR.length-1,tourI+1);drawTour()}
+  else if(a==='prev'){tourI=Math.max(0,tourI-1);drawTour()}
+  else if(a==='skip'||a==='done'||a==='demo')endTour();
+  else if(a==='excel')endTour(()=>go('datos'));
+  else if(a==='blank')endTour(()=>{S=blank();save();go('cuentas');toast('Renombra tus cuentas y agrega las que te falten')});
+},true);
+document.addEventListener('keydown',e=>{if(!tourOn)return;if(e.key==='Escape')endTour();else if(e.key==='ArrowRight'&&!TOUR[tourI].last){tourI++;drawTour()}else if(e.key==='ArrowLeft'&&tourI>0){tourI--;drawTour()}});
+addEventListener('resize',()=>{if(tourOn)drawTour()});
 
 /* ============ aviso al abrir ============ */
 function showAlertsOnOpen(){
@@ -1276,7 +1339,7 @@ function render(){
 }
 (function(){const h=(location.hash||'').slice(1);if(h&&V[h])UI.view=h})();
 render();
-showAlertsOnOpen();
+if(!tourSeen())setTimeout(startTour,700);else showAlertsOnOpen();
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render())}catch(e){}
 new MutationObserver(()=>render()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(charts.length)render()});
