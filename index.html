@@ -52,6 +52,27 @@
   --grid:#232837; --axis:#3A4051;
   --shadow:none; color-scheme:dark;
 }
+/* Apariencia elegida dentro de la app (gana sobre el sistema) */
+:root[data-app-theme="light"]{--bg:#EDEFF4; --surface:#FFFFFF; --surface-2:#E4E7EF; --ink:#151B2E; --muted:#596077; --faint:#8A90A2; --line:#D9DDE6;
+  --brand:#25336F; --on-brand:#FFFFFF; --brand-soft:#DDE2F5; --gold:#9A6B10; --gold-soft:#F4E8CC;
+  --pos:#127A4B; --neg:#BF3D36; --warn:#9A6200; --pos-soft:#DCF1E6; --neg-soft:#F8E0DE; --warn-soft:#F7EACB;
+  --hero-a:#1D285A; --hero-b:#33448F; --hero-ink:#F5F2E9; --hero-mut:#C5CAE6; --hero-gold:#E9BC55;
+  --ico-bg-l:91%; --ico-fg-l:30%; --ico-s:42%;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948; --s-other:#A4A9B6;
+  --grid:#E6E8EE; --axis:#C3C7D1;
+  --f-display:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+  --f-body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --r-lg:22px; --r-md:16px; --r-sm:11px;
+  --shadow:0 1px 2px rgba(20,27,46,.05),0 6px 18px rgba(20,27,46,.06); color-scheme:light;}
+:root[data-app-theme="dark"]{--bg:#0C0F17; --surface:#161A25; --surface-2:#212635; --ink:#ECEEF4; --muted:#A3A9BA; --faint:#757C8F; --line:#2A3040;
+  --brand:#93A2F2; --on-brand:#0C0F17; --brand-soft:#252D4D; --gold:#E2B252; --gold-soft:#3A2F17;
+  --pos:#43C68C; --neg:#F27A70; --warn:#E9AE3B; --pos-soft:#15332A; --neg-soft:#3A1F1F; --warn-soft:#3A2E14;
+  --hero-a:#18204A; --hero-b:#2B3B84; --hero-ink:#F5F2E9; --hero-mut:#B9BFE0; --hero-gold:#EDC264;
+  --ico-bg-l:22%; --ico-fg-l:80%; --ico-s:35%;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --s-other:#5E6474;
+  --grid:#232837; --axis:#3A4051;
+  --shadow:none; color-scheme:dark;}
+
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--ink)}
 body{font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
@@ -327,6 +348,7 @@ details[open] summary::after{content:" ▴"}
 .swatches{display:flex;flex-wrap:wrap;gap:10px}
 .sw{width:44px;height:44px;border-radius:14px;border:3px solid transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);position:relative;cursor:pointer;display:grid;place-items:center}
 .sw[aria-pressed="true"]{border-color:var(--ink)}
+.sw.acc span{color:#fff;font-weight:900;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.45)}
 .sw.custom span{color:#fff;font-weight:800;font-size:20px;text-shadow:0 1px 3px rgba(0,0,0,.5);pointer-events:none}
 .sw.custom input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 
@@ -350,9 +372,10 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
   .side-foot{margin-top:auto;font-size:12px;color:var(--faint);padding:12px 10px 0;line-height:1.4}
   .tabbar{display:none}
   .app{max-width:none;margin:0 0 0 250px;padding-inline:40px;padding-block:0 56px}
-  #view,#banner{max-width:1180px}
+  #view,#banner{max-width:1180px;margin-inline:auto}
   #view.narrow,#banner.narrow{max-width:800px}
-  .top{margin-inline:-40px;padding-inline:40px;padding-block:24px 16px}
+  .top{--w:1180px;margin-inline:-40px;padding-inline:max(40px,calc((100vw - 250px - var(--w)) / 2));padding-block:24px 16px}
+  .top.narrow{--w:800px}
   .top .logo{display:none}
   .top .top-sub{font-family:var(--f-display);font-size:24px;font-weight:800;color:var(--ink)}
   .hello h1{font-size:32px}
@@ -377,7 +400,8 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
   button.prow,.alert-row{border-radius:10px}
   .fab{display:none}
 }
-@media (min-width:1300px){.app{padding-inline:56px}.top{margin-inline:-56px;padding-inline:56px}}
+@media (min-width:1300px){.app{padding-inline:56px}.top{margin-inline:-56px;padding-inline:max(56px,calc((100vw - 250px - var(--w)) / 2))}}
+@media (min-width:1640px){#view,#banner{max-width:1380px}.top{--w:1380px}.top.narrow{--w:800px}.an-grid{gap:4px 28px}.dash{gap:0 32px}}
 
 /* Guía */
 .tour{position:fixed;inset:0;z-index:70}
@@ -786,7 +810,7 @@ V.mas={html(){
   const it=(go,ic,t,s)=>`<button class="menu-i" data-go="${go}"><span class="mi">${ICON[ic]}</span><div><b>${t}</b><small>${s}</small></div>${ICON.next.replace('<svg','<svg width="18" height="18" style="color:var(--faint)"')}</button>`;
   const soon=(t,s)=>`<button class="menu-i" disabled><span class="mi">${ICON.pronto}</span><div><b>${t}</b><small>${s}</small></div><span class="pill">Pronto</span></button>`;
   return`<div class="card" style="padding:4px 0"><div class="menu">
-    ${it('perfil','paleta','Personalizar','Tu nombre, la tarjeta y qué ver en la Cartera')}
+    ${it('perfil','paleta','Personalizar','Modo claro u oscuro, colores, tarjeta y Cartera')}
     ${it('patrimonio','pat','Patrimonio neto','Cuánto vales hoy y tu histórico diario')}
     ${it('nomina','nomina','Calculadora de nómina','Neto, horas extras, deducciones y prestaciones')}
   </div></div>
@@ -1399,6 +1423,8 @@ const ACT={
   editCuenta:el=>cuentaForm(Number(el.dataset.i)),
   editCat:el=>catForm(el.dataset.n||null),
   tour:()=>startTour(),
+  aparModo:el=>{apar().modo=el.dataset.v;persist();applyAppearance();const y=scrollY;render();scrollTo(0,y)},
+  aparAcento:el=>{apar().acento=el.dataset.v;persist();applyAppearance();const y=scrollY;render();scrollTo(0,y);toast('Color de acento: '+ACENTOS[el.dataset.v][0])},
   hmMove:el=>{const h=homeCfg(),i=h.order.indexOf(el.dataset.k),j=i+(+el.dataset.d);if(j<0||j>=h.order.length)return;[h.order[i],h.order[j]]=[h.order[j],h.order[i]];persist();const y=scrollY;render();scrollTo(0,y)},
   hmReset:()=>{S.perfil.home=null;homeCfg();persist();const y=scrollY;render();scrollTo(0,y);toast('Cartera como al principio')},
   revealSaldo:()=>{UI.reveal=!UI.reveal;render()},
@@ -1664,7 +1690,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
     </div></div>`}
 
 /* ============ reseñas y sugerencias ============ */
-const WHATSAPP_FREDY='';   // ← número con indicativo, sin + ni espacios. Ej: 573001234567
+const WHATSAPP_FREDY='573004920180';   // ← número con indicativo, sin + ni espacios. Ej: 573001234567
 let FB={tipo:'mejora',est:0,txt:''};
 V.opinion={html(){
   const tipos=[['mejora','💡 Idea o mejora'],['error','🐞 Algo falla'],['resena','⭐ Reseña']];
@@ -1707,6 +1733,29 @@ function showRecovery(code){
     $('#rc-copy').onclick=()=>{navigator.clipboard.writeText(code).then(()=>toast('Código copiado'),()=>{const r=document.createRange();r.selectNodeContents($('.rcode'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Selecciónalo y cópialo')})}});
 }
 
+/* ============ apariencia: modo y color de acento ============ */
+const ACENTOS={indigo:['Índigo',{b:'#25336F',s:'#DDE2F5',o:'#FFFFFF'},{b:'#93A2F2',s:'#252D4D',o:'#0C0F17'}],
+  esmeralda:['Esmeralda',{b:'#0F6B57',s:'#D5EEE6',o:'#FFFFFF'},{b:'#4FD1A8',s:'#143A31',o:'#06130F'}],
+  oceano:['Océano',{b:'#155E86',s:'#D6E9F4',o:'#FFFFFF'},{b:'#6CC2F0',s:'#12324A',o:'#06121B'}],
+  ciruela:['Ciruela',{b:'#5B2E8C',s:'#E9DEF6',o:'#FFFFFF'},{b:'#BB98F0',s:'#33244D',o:'#140B22'}],
+  coral:['Coral',{b:'#B4472A',s:'#F7E0D8',o:'#FFFFFF'},{b:'#F59273',s:'#452419',o:'#1C0A04'}],
+  grafito:['Grafito',{b:'#2E3440',s:'#E2E5EA',o:'#FFFFFF'},{b:'#C9CFDA',s:'#2A2F3A',o:'#0C0F17'}]};
+function apar(){const pf=S&&S.perfil;if(!pf)return{modo:'auto',acento:'indigo'};pf.apar=Object.assign({modo:'auto',acento:'indigo'},pf.apar||{});return pf.apar}
+function isDarkNow(){const a=apar(),r=document.documentElement;if(a.modo==='oscuro')return true;if(a.modo==='claro')return false;const h=r.getAttribute('data-theme');if(h==='dark')return true;if(h==='light')return false;try{return matchMedia('(prefers-color-scheme: dark)').matches}catch(e){return false}}
+function applyAppearance(){const a=apar(),r=document.documentElement;
+  if(a.modo==='claro')r.setAttribute('data-app-theme','light');else if(a.modo==='oscuro')r.setAttribute('data-app-theme','dark');else r.removeAttribute('data-app-theme');
+  const ac=ACENTOS[a.acento];if(!ac||a.acento==='indigo'){['--brand','--brand-soft','--on-brand'].forEach(v=>r.style.removeProperty(v));}
+  else{const t=isDarkNow()?ac[2]:ac[1];r.style.setProperty('--brand',t.b);r.style.setProperty('--brand-soft',t.s);r.style.setProperty('--on-brand',t.o)}
+  const mt=document.querySelector('meta[name=theme-color]');if(mt)mt.setAttribute('content',isDarkNow()?'#0C0F17':'#EDEFF4');
+}
+function aparHTML(){const a=apar(),dk=isDarkNow();
+  return`<div class="card"><div class="form">
+    <div class="field"><span>Modo</span><div class="seg" role="group" aria-label="Modo de color">${[['auto','Automático'],['claro','☀️ Claro'],['oscuro','🌙 Oscuro']].map(([v,l])=>`<button data-act="aparModo" data-v="${v}" aria-pressed="${a.modo===v}">${l}</button>`).join('')}</div>
+      <p class="small muted" style="margin:0">Automático sigue la configuración de tu celular o computador.</p></div>
+    <div class="field"><span>Color de acento</span><div class="swatches">${Object.entries(ACENTOS).map(([k,[l,L,D]])=>`<button class="sw acc" data-act="aparAcento" data-v="${k}" aria-pressed="${a.acento===k}" aria-label="${l}" title="${l}" style="background:${(dk?D:L).b}"><span>${a.acento===k?'✓':''}</span></button>`).join('')}</div>
+      <p class="small muted" style="margin:0">Cambia botones, menú, selecciones y enlaces. Acento actual: <b>${ACENTOS[a.acento][0]}</b>.</p></div>
+  </div></div>`}
+
 /* ============ personalización ============ */
 const EMOJIS=['👋','😄','🚀','💪','🌞','✨','🤑','💸','🎯','🔥','🌱','😎','🙌','💰','🍀','⭐','🦾','🎉','🌈','☕','🧠','🏆','🌻','🥳'];
 const EMO=EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
@@ -1721,7 +1770,8 @@ function fechaLarga(){const d=new Date();return`${['domingo','lunes','martes','m
 function helloHTML(){const n=(S.perfil.nombre||'').trim();return`<div class="hello"><h1>Hola${n?', '+esc(n):''} <span class="emo" aria-hidden="true">${EMO}</span></h1><p>${saludo()} · ${fechaLarga()}</p></div>`}
 function heroPreview(){const d=der();return`<section class="hero hero-main${S.perfil.img?' has-img':''}" style="${heroStyle()}" aria-label="Vista previa de la tarjeta"><div class="hero-top"><span class="eyebrow">Saldo total</span><span class="hero-month">${monthLabel(curMonth())}</span></div><div class="hero-num num">${fmt(d.total)}</div><div class="hero-flow" style="margin-top:14px"><div><span>Entró</span><b>+${fmtC(monthStats(curMonth()).ing)}</b></div><div><span>Salió</span><b>−${fmtC(monthStats(curMonth()).egr)}</b></div><div><span>Vista previa</span><b>✓</b></div></div></section>`}
 V.perfil={html(){const pf=S.perfil;
-  return`<div class="card"><label class="field"><span>Tu nombre o alias</span><input class="inp" id="pf-n" value="${esc(pf.nombre)}" maxlength="24" placeholder="Ej. Fredy" autocomplete="given-name"></label><p class="small muted" style="margin:8px 0 0">Aparece en el saludo de la cartera, con un emoji distinto cada vez que abres la app.</p></div>
+  return`<div class="sec-h" style="margin-top:0"><h2>Apariencia</h2></div>${aparHTML()}
+  <div class="sec-h"><h2>Tu nombre</h2></div><div class="card"><label class="field"><span>Tu nombre o alias</span><input class="inp" id="pf-n" value="${esc(pf.nombre)}" maxlength="24" placeholder="Ej. Fredy" autocomplete="given-name"></label><p class="small muted" style="margin:8px 0 0">Aparece en el saludo de la cartera, con un emoji distinto cada vez que abres la app.</p></div>
   <div class="sec-h"><h2>Tarjeta de inicio</h2></div>
   <div id="pf-prev">${heroPreview()}</div>
   <div class="card" style="margin-top:12px"><div class="form">
@@ -1848,9 +1898,9 @@ function renderBanner(){
   $('#banner').innerHTML=(UI.view==='inicio'||UI.view==='datos'||!storageOK)?h:'';
 }
 function render(){
-  destroyCharts();const v=V[UI.view]||V.inicio;if(!V[UI.view])UI.view='inicio';
+  applyAppearance();destroyCharts();const v=V[UI.view]||V.inicio;if(!V[UI.view])UI.view='inicio';
   renderTop();renderBanner();
-  $('#view').classList.toggle('narrow',NARROW.has(UI.view));$('#banner').classList.toggle('narrow',NARROW.has(UI.view));
+  $('#view').classList.toggle('narrow',NARROW.has(UI.view));$('#banner').classList.toggle('narrow',NARROW.has(UI.view));$('#top').classList.toggle('narrow',NARROW.has(UI.view));
   $('#view').classList.toggle('priv',UI.priv&&(UI.view==='patrimonio'||UI.view==='nomina'));
   $('#view').innerHTML=v.html();if(v.mount)v.mount();
   const tab=TITLES[UI.view]?'mas':UI.view;$$('.tab').forEach(t=>t.setAttribute('aria-current',t.dataset.tab===tab?'page':'false'));
@@ -1859,6 +1909,7 @@ function render(){
 }
 renderSide();
 (function(){const h=(location.hash||'').slice(1);if(h&&V[h])UI.view=h})();
+applyAppearance();
 function startup(){const n=processFijos();render();if(n)setTimeout(()=>toast(`Se registraron ${n} pago${n>1?'s':''} fijo${n>1?'s':''}`),600);
   if(!tourSeen())setTimeout(startTour,700);else askNameOnOpen(showAlertsOnOpen)}
 if(pinGet())showLock(startup);else startup();
