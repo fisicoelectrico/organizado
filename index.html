@@ -283,6 +283,7 @@ textarea.inp{resize:vertical;min-height:110px;font-family:var(--f-body);line-hei
 a.btn{text-decoration:none}
 .btn.wa[aria-disabled="true"]{opacity:.55}
 .rcode{font-family:'Courier New',ui-monospace,monospace;font-size:30px;font-weight:800;letter-spacing:.12em;text-align:center;padding:18px 12px;border-radius:16px;background:var(--surface);border:2px dashed var(--gold);user-select:all}
+.pwrap{position:relative;display:block;width:100%}.pwrap .inp{padding-right:44px;width:100%;box-sizing:border-box}.pweye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;background:none;font-size:18px;cursor:pointer;opacity:.55;color:inherit}.pw-hint{margin:4px 2px 0;min-height:1em}
 .lock-in .inp.au-mail{font-family:inherit;font-size:16px;letter-spacing:0;text-transform:none}
 .lock-in.au{max-width:360px}
 .bsub{display:block;font-weight:500;opacity:.85;margin-top:2px;font-size:12.5px}
@@ -1817,7 +1818,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.2';
+const APP_VERSION='2.3';
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1875,6 +1876,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.3',f:'2026-10-14',items:['Al escribir tu contraseña puedes <b>verla con el ojito</b>, y al crear la cuenta o cambiarla la app te avisa en vivo si las dos coinciden.']},
   {v:'2.2',f:'2026-10-14',items:['Ahora puedes <b>instalar la app</b> en tu celular o computador (Más › Instalar la app): queda con su propio ícono, se abre sin la barra del navegador y también abre sin internet.']},
   {v:'2.1',f:'2026-10-14',items:['Ahora puedes entrar con <b>correo y contraseña</b>, crear tu cuenta con una contraseña y recuperarla si la olvidas.','Si ya tienes cuenta, crea tu contraseña en Más › Cuenta y nube › Crear o cambiar contraseña. El enlace por correo sigue disponible.']},
   {v:'2.0',f:'2026-10-14',items:['Nuevo: <b>cuentas</b>. Inicia sesión con tu correo (te enviamos un código, sin contraseñas) y ve tus datos desde el celular, el computador o cualquier dispositivo. Está en Más › Cuenta y nube.','Tus datos se guardan en tu cuenta y también en el dispositivo: sin internet la app sigue funcionando y sube los cambios cuando vuelve la conexión.','La primera vez te preguntamos si subimos los datos que ya tienes en este dispositivo. Tu respaldo .json sigue funcionando igual.','Cada cuenta ve únicamente sus propios datos.']},
@@ -2406,6 +2408,17 @@ async function boot(){
   if(modo==='local'||metaRaw()){startup();return}
   authScreen();
 }
+function pwEyes(root,pairs){
+  root.querySelectorAll('input[type=password]').forEach(inp=>{
+    const w=document.createElement('span');w.className='pwrap';inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+    const b=document.createElement('button');b.type='button';b.className='pweye';b.setAttribute('aria-label','Mostrar contraseña');b.setAttribute('aria-pressed','false');b.textContent='👁';
+    b.onclick=()=>{const show=inp.type==='password';inp.type=show?'text':'password';b.setAttribute('aria-pressed',String(show));b.setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña');b.style.opacity=show?'1':'.55'};
+    w.appendChild(b)});
+  if(pairs){const a=root.querySelector('#'+pairs[0]),c=root.querySelector('#'+pairs[1]);
+    const h=document.createElement('p');h.className='small pw-hint';h.setAttribute('aria-live','polite');c.parentNode.after(h);
+    const chk=()=>{if(!c.value){h.textContent='';return}const ok=a.value===c.value;h.textContent=ok?'✓ Coinciden':'✗ No coinciden todavía';h.style.color=ok?'var(--ok,#2e9e5b)':'var(--bad,#d0453b)'};
+    a.addEventListener('input',chk);c.addEventListener('input',chk)}
+}
 function authScreen(){
   const A=$('#auth');if(!sb){toast('Las cuentas necesitan conexión a internet');return}
   A.hidden=false;document.body.style.overflow='hidden';let email='';
@@ -2421,7 +2434,7 @@ function authScreen(){
     if(/fetch|network/i.test(s))return'No hay conexión. Revisa tu internet e intenta de nuevo.';
     return'No se pudo completar. Intenta de nuevo.'};
   const redirect=location.origin+location.pathname;
-  const frame=inner=>{A.innerHTML=`<div class="lock-in au"><div class="tour-logo">ORGANIZADO<b>$</b></div>${inner}</div>`};
+  const frame=inner=>{A.innerHTML=`<div class="lock-in au"><div class="tour-logo">ORGANIZADO<b>$</b></div>${inner}</div>`;pwEyes(A,A.querySelector('#au-pass2')?['au-pass','au-pass2']:null)};
   const mail=()=>`<input class="inp au-mail" id="au-mail" type="email" inputmode="email" autocomplete="email" placeholder="tucorreo@ejemplo.com" value="${esc(email)}">`;
   const pass=(id,ph,ac)=>`<input class="inp au-mail" id="${id}" type="password" autocomplete="${ac}" placeholder="${ph}">`;
   const localBtn=()=>`<button class="link" id="au-local" style="color:var(--muted)">${started?'Cancelar':'Usar solo en este dispositivo'}</button>`;
@@ -2498,6 +2511,7 @@ function passSheet(){
     <label class="field"><span>Contraseña nueva</span><input class="inp" id="pw1" type="password" autocomplete="new-password"></label>
     <label class="field"><span>Repítela</span><input class="inp" id="pw2" type="password" autocomplete="new-password"></label>
     <p class="pin-msg" id="pw-msg" role="status"></p><button class="btn block" id="pw-ok">Guardar contraseña</button></div>`,()=>{
+    pwEyes($('#pw1').closest('.form'),['pw1','pw2']);
     const m=(t,bad=true)=>{const e=$('#pw-msg');e.textContent=t;e.classList.toggle('bad',bad)};
     $('#pw-ok').onclick=async()=>{const a=$('#pw1').value,b=$('#pw2').value;
       if(a.length<8){m('Debe tener al menos 8 caracteres.');return}if(a!==b){m('Las contraseñas no coinciden.');return}
