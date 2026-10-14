@@ -9,7 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="ORGANIZADO$">
 <meta name="description" content="Finanzas personales: registra gastos, mira tus gráficos y controla presupuesto y deudas. Tus datos se guardan en tu navegador y, si inicias sesión, también en tu cuenta.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D285A'/%3E%3Ctext x='32' y='47' font-family='Arial' font-weight='900' font-size='42' text-anchor='middle' fill='%23E9BC55'%3E$%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D285A'/%3E%3Ctext x='32' y='47' font-family='Arial' font-weight='900' font-size='42' text-anchor='middle' fill='%23E9BC55'%3E$%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>ORGANIZADO$</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -601,6 +603,7 @@ const ICON={
   paleta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.6-1.7 0-1.2-1-1.6-1-2.6 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4-4-7.1-9-7.1z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg>',
   rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg>',
   repetir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
+  instalar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   nube:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5z"/></svg>',
   candado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   pronto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
@@ -612,6 +615,10 @@ let storageOK=true;
 function load(){try{const t=localStorage.getItem(KEY);return t?JSON.parse(t):null}catch(e){storageOK=false;return null}}
 let S=load();
 const CLOUD_OK=/(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+const PWA_OK=CLOUD_OK;
+const isStandalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+const inst={ev:null};
+try{addEventListener('beforeinstallprompt',e=>{e.preventDefault();inst.ev=e});addEventListener('appinstalled',()=>{inst.ev=null;if(UI.view==='instalar')render()})}catch(e){}
 const SYNCK='organizado.sync',MODEK='organizado.modo';
 let sb=null,started=false,cloud={recovery:false,user:null,state:'off',busy:false,t:0,last:0,lastOk:0,ask:null,applying:false,changed:false,leaving:false};
 function persist(){let j='';try{j=JSON.stringify(S);localStorage.setItem(KEY,j)}catch(e){storageOK=false}cloudDirty(j)}
@@ -718,7 +725,7 @@ function alertaTxt(a){return a.x.tipo==='debo'?`Pagar a ${a.x.persona}`:`${a.x.p
 let UI={view:'inicio',month:curMonth(),per:'mes',anMonth:curMonth(),ft:'todos',fc:'',fcat:'',q:'',dTab:'me_deben',pMonth:curMonth(),patPer:'90',patN:30,priv:false};
 try{UI.priv=localStorage.getItem('organizado.priv')==='1'}catch(e){}
 try{const u=JSON.parse(localStorage.getItem(UIKEY)||'null');if(u&&u.view)UI.view=u.view}catch(e){}
-const TITLES={novedades:'Novedades',opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',cuenta:'Cuenta y nube',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
+const TITLES={novedades:'Novedades',opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',cuenta:'Cuenta y nube',instalar:'Instalar la app',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
 function go(v,o){UI.view=v;if(o)Object.assign(UI,o);try{localStorage.setItem(UIKEY,JSON.stringify({view:v}))}catch(e){}render();window.scrollTo(0,0)}
 
 /* ============ charts ============ */
@@ -909,6 +916,7 @@ V.mas={html(){
     ${CLOUD_OK?it('cuenta','nube','Cuenta y nube',cloud.user?esc(cloud.user.email||'Sesión iniciada'):'Ve tus datos desde cualquier dispositivo'):''}
     ${it('seguridad','candado','Seguridad',pinGet()?'PIN activado':'Pon un PIN para abrir la app')}
     ${it('datos','datos','Importar y respaldos','Trae tu Excel, exporta tus datos')}
+    ${PWA_OK&&!isStandalone()?it('instalar','instalar','Instalar la app','Ábrela como una app, sin la barra del navegador'):''}
   </div></div>
   <div class="sec-h"><h2>En camino</h2></div>
   <div class="card" style="padding:4px 0"><div class="menu">
@@ -1532,6 +1540,7 @@ const ACT={
   syncNow:()=>{if(!cloud.user){authScreen();return}toast('Sincronizando…');if(metaGet().dirty)cloudPush();else cloudSync()},
   logout:()=>{const d=metaGet().dirty;confirmSheet('Cerrar sesión',d?'Tienes cambios que aún no se han subido. Intentaremos subirlos antes de cerrar.':'Se borrarán los datos de este dispositivo (siguen guardados en tu cuenta) y tendrás que iniciar sesión otra vez.','Cerrar sesión',doLogout,true)},
   askOpen:()=>showAsk(),
+  instalarYa:async()=>{const e=inst.ev;if(!e)return;e.prompt();try{await e.userChoice}catch(x){}inst.ev=null;render()},
   pass:()=>passSheet(),
   askLater:()=>closeSheet(),
   askSubir:()=>{closeSheet();cloud.ask=null;metaSet({ver:0,dirty:true,agreed:1});cloudPush()},
@@ -1808,7 +1817,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.1';
+const APP_VERSION='2.2';
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1866,6 +1875,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.2',f:'2026-10-14',items:['Ahora puedes <b>instalar la app</b> en tu celular o computador (Más › Instalar la app): queda con su propio ícono, se abre sin la barra del navegador y también abre sin internet.']},
   {v:'2.1',f:'2026-10-14',items:['Ahora puedes entrar con <b>correo y contraseña</b>, crear tu cuenta con una contraseña y recuperarla si la olvidas.','Si ya tienes cuenta, crea tu contraseña en Más › Cuenta y nube › Crear o cambiar contraseña. El enlace por correo sigue disponible.']},
   {v:'2.0',f:'2026-10-14',items:['Nuevo: <b>cuentas</b>. Inicia sesión con tu correo (te enviamos un código, sin contraseñas) y ve tus datos desde el celular, el computador o cualquier dispositivo. Está en Más › Cuenta y nube.','Tus datos se guardan en tu cuenta y también en el dispositivo: sin internet la app sigue funcionando y sube los cambios cuando vuelve la conexión.','La primera vez te preguntamos si subimos los datos que ya tienes en este dispositivo. Tu respaldo .json sigue funcionando igual.','Cada cuenta ve únicamente sus propios datos.']},
   {v:'1.3',f:'2026-10-14',items:['Nuevo: <b>Metas de ahorro</b> (Más › Metas de ahorro). Crea una meta, por ejemplo una moto de $10 M, y aparta dinero desde cualquier cuenta.','El dinero apartado sigue en tu cuenta: la Cartera te muestra el saldo completo y, debajo, cuánto tienes disponible y cuánto está guardado para metas.','Con una fecha, la meta te dice cuánto apartar cada mes. Al cumplirla puedes registrar el gasto con un toque.','Nuevo: <b>Lista de compras</b> para anotar rápido lo que va haciendo falta. Tacha lo que compres, marca lo urgente, pon precio estimado y compártela por WhatsApp.']},
@@ -2259,7 +2269,7 @@ function renderSide(){
   <span class="side-h">Ajustes</span>${b('cuentas',ICON.cuenta,'Cuentas')}${b('categorias',ICON.cat,'Categorías')}${b('atajos',ICON.rayo,'Atajos')}${CLOUD_OK?b('cuenta',ICON.nube,'Cuenta y nube'):''}${b('seguridad',ICON.candado,'Seguridad')}${b('perfil',ICON.paleta,'Personalizar')}${b('datos',ICON.datos,'Importar y respaldos')}${b('mas',$('.tab[data-tab=mas] svg').outerHTML,'Más')}${b('opinion','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>','Envíanos tu opinión')}</nav>
   <p class="side-foot"><button class="link" data-go="novedades">Novedades · v${APP_VERSION}</button><br>${cloud.user?'Tus datos se sincronizan con tu cuenta.':'Tus datos se guardan solo en este navegador. Descarga un respaldo cada semana.'}</p>`;
 }
-const NARROW=new Set(['metas','compras','novedades','opinion','atajos','fijos','seguridad','cuenta','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
+const NARROW=new Set(['metas','compras','novedades','opinion','atajos','fijos','seguridad','cuenta','instalar','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
 document.addEventListener('keydown',e=>{if(e.key!=='n'&&e.key!=='N')return;if(e.ctrlKey||e.metaKey||e.altKey||tourOn)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;if(!$('#sheet').hidden)return;e.preventDefault();openMovForm(null)});
 
 /* ============ render ============ */
@@ -2378,6 +2388,7 @@ async function gotSession(s){
   if(cloud.recovery){cloud.recovery=false;setTimeout(passSheet,900)}
 }
 async function boot(){
+  if(PWA_OK&&'serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
   if(!CLOUD_OK){startup();return}
   let ses=null;
   try{
@@ -2499,6 +2510,15 @@ async function doLogout(){
   cloud.leaving=true;try{await sb.auth.signOut({scope:'local'})}catch(e){}
   wipeLocal();cloud.user=null;cloud.ask=null;cloud.leaving=false;setState('off');S=demo();D=null;UI.view='inicio';render();authScreen();
 }
+V.instalar={html(){
+  const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/i.test(ua);
+  if(isStandalone())return`<div class="card"><b style="font-size:15px">Ya estás usando la app instalada</b><p class="small muted" style="margin:6px 0 0">Ábrela desde el ícono de tu pantalla de inicio. Se actualiza sola cuando hay una versión nueva.</p></div>`;
+  const step=(t,l)=>`<div class="card"><b style="font-size:14px">${t}</b><ol class="small" style="margin:8px 0 0;padding-left:20px;display:grid;gap:4px">${l.map(x=>`<li>${x}</li>`).join('')}</ol></div>`;
+  const ios_=step('iPhone o iPad (Safari)',['Toca el botón <b>Compartir</b> (el cuadro con la flecha hacia arriba).','Elige <b>Agregar a pantalla de inicio</b>.','Toca <b>Agregar</b>.']);
+  const and_=step('Android (Chrome)',['Toca el menú <b>⋮</b> de arriba a la derecha.','Elige <b>Instalar app</b> o <b>Agregar a la pantalla de inicio</b>.','Confirma con <b>Instalar</b>.']);
+  const pc_=step('Computador (Chrome o Edge)',['Busca el ícono de instalar en el borde derecho de la barra de direcciones, o abre el menú <b>⋮</b>.','Elige <b>Instalar ORGANIZADO$</b>.']);
+  const order=ios?[ios_,and_,pc_]:and?[and_,ios_,pc_]:[pc_,and_,ios_];
+  return`<div class="stack">${inst.ev?`<div class="card"><b style="font-size:15px">Instala ORGANIZADO$</b><p class="small muted" style="margin:6px 0 14px">Queda con su propio ícono, se abre sin la barra del navegador y funciona también sin internet.</p><button class="btn block" data-act="instalarYa">Instalar ahora</button></div>`:`<p class="small muted" style="margin:0">Instalada, la app tiene su propio ícono, se abre sin la barra del navegador y funciona también sin internet. Sigue los pasos de tu dispositivo:</p>`}${order.join('')}${ios?'<p class="small muted" style="margin:0">En iPhone, dentro de la app instalada entra a tu cuenta con correo y contraseña: el enlace que llega al correo se abre en Safari, no en la app.</p>':''}</div>`}};
 V.cuenta={html(){
   const u=cloud.user;
   if(!u)return`<div class="card"><b style="font-size:15px">Sin cuenta</b><p class="small muted" style="margin:6px 0 14px">Tus datos están solo en este dispositivo. Con una cuenta los ves desde cualquier dispositivo y quedan guardados en la nube.</p><button class="btn block" data-act="login">Iniciar sesión o crear cuenta</button></div>`;

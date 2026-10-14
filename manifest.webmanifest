@@ -1,0 +1,17 @@
+{
+  "name": "ORGANIZADO$",
+  "short_name": "ORGANIZADO$",
+  "description": "Finanzas personales: registra gastos, mira tus gráficos y controla presupuesto y deudas.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1D285A",
+  "theme_color": "#1D285A",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
