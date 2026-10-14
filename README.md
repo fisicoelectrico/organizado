@@ -16,7 +16,7 @@ App web de finanzas personales pensada para el celular: registro rápido de gast
 
 1. Crea un proyecto en [supabase.com](https://supabase.com) y ejecuta `supabase/setup.sql` en *SQL Editor*.
 2. En *Authentication › Sign In / Providers* deja activado Email, y en *URL Configuration* pon la dirección de la página (Site URL y Redirect URLs).
-3. En *Authentication › Email Templates* agrega `{{ .Token }}` a las plantillas *Magic Link* y *Confirm signup* para que el correo traiga el código.
+3. Opcional: con un correo propio (SMTP) se pueden editar las plantillas de *Magic Link* y *Confirm signup* para que el correo traiga un código (`{{ .Token }}`) además del enlace. Con el correo por defecto de Supabase el login funciona con el enlace.
 4. La URL del proyecto y la clave publicable (`sb_publishable_…`) van al inicio del módulo «nube» de `index.html`. Nunca pongas aquí la clave `secret` ni `service_role`.
 
 ## Instalar en el celular
