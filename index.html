@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ORGANIZADO$">
-<meta name="description" content="Finanzas personales: registra gastos, mira tus gráficos y controla presupuesto y deudas. Tus datos se guardan en tu propio navegador.">
+<meta name="description" content="Finanzas personales: registra gastos, mira tus gráficos y controla presupuesto y deudas. Tus datos se guardan en tu navegador y, si inicias sesión, también en tu cuenta.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D285A'/%3E%3Ctext x='32' y='47' font-family='Arial' font-weight='900' font-size='42' text-anchor='middle' fill='%23E9BC55'%3E$%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D285A'/%3E%3Ctext x='32' y='47' font-family='Arial' font-weight='900' font-size='42' text-anchor='middle' fill='%23E9BC55'%3E$%3C/text%3E%3C/svg%3E">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -281,6 +281,9 @@ textarea.inp{resize:vertical;min-height:110px;font-family:var(--f-body);line-hei
 a.btn{text-decoration:none}
 .btn.wa[aria-disabled="true"]{opacity:.55}
 .rcode{font-family:'Courier New',ui-monospace,monospace;font-size:30px;font-weight:800;letter-spacing:.12em;text-align:center;padding:18px 12px;border-radius:16px;background:var(--surface);border:2px dashed var(--gold);user-select:all}
+.lock-in .inp.au-mail{font-family:inherit;font-size:16px;letter-spacing:0;text-transform:none}
+.lock-in.au{max-width:360px}
+.bsub{display:block;font-weight:500;opacity:.85;margin-top:2px;font-size:12.5px}
 .lock-in .inp{text-align:center;font-family:'Courier New',ui-monospace,monospace;font-size:20px;letter-spacing:.1em;text-transform:uppercase}
 
 /* Hojas emergentes: separadas del fondo */
@@ -550,6 +553,7 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="lock" id="lock" hidden role="dialog" aria-modal="true" aria-label="App bloqueada"></div>
+<div class="lock" id="auth" hidden role="dialog" aria-modal="true" aria-label="Iniciar sesión"></div>
 <div class="tour" id="tour" hidden><div class="tour-block"></div><div class="tour-hole" id="tour-hole"></div><div class="tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
@@ -597,6 +601,7 @@ const ICON={
   paleta:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.6-.9 1.6-1.7 0-1.2-1-1.6-1-2.6 0-.9.7-1.6 1.6-1.6H16a5 5 0 0 0 5-5c0-4-4-7.1-9-7.1z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg>',
   rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg>',
   repetir:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
+  nube:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5z"/></svg>',
   candado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   pronto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
 };
@@ -606,7 +611,10 @@ const KEY='organizado.v1', UIKEY='organizado.ui';
 let storageOK=true;
 function load(){try{const t=localStorage.getItem(KEY);return t?JSON.parse(t):null}catch(e){storageOK=false;return null}}
 let S=load();
-function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){storageOK=false}}
+const CLOUD_OK=/(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+const SYNCK='organizado.sync',MODEK='organizado.modo';
+let sb=null,started=false,cloud={user:null,state:'off',busy:false,t:0,last:0,lastOk:0,ask:null,applying:false,changed:false,leaving:false};
+function persist(){let j='';try{j=JSON.stringify(S);localStorage.setItem(KEY,j)}catch(e){storageOK=false}cloudDirty(j)}
 function save(){D=null;persist()}
 let D=null;
 function nextId(){S.seq=(S.seq||0)+1;return S.seq}
@@ -710,7 +718,7 @@ function alertaTxt(a){return a.x.tipo==='debo'?`Pagar a ${a.x.persona}`:`${a.x.p
 let UI={view:'inicio',month:curMonth(),per:'mes',anMonth:curMonth(),ft:'todos',fc:'',fcat:'',q:'',dTab:'me_deben',pMonth:curMonth(),patPer:'90',patN:30,priv:false};
 try{UI.priv=localStorage.getItem('organizado.priv')==='1'}catch(e){}
 try{const u=JSON.parse(localStorage.getItem(UIKEY)||'null');if(u&&u.view)UI.view=u.view}catch(e){}
-const TITLES={novedades:'Novedades',opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
+const TITLES={novedades:'Novedades',opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',cuenta:'Cuenta y nube',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
 function go(v,o){UI.view=v;if(o)Object.assign(UI,o);try{localStorage.setItem(UIKEY,JSON.stringify({view:v}))}catch(e){}render();window.scrollTo(0,0)}
 
 /* ============ charts ============ */
@@ -898,6 +906,7 @@ V.mas={html(){
     ${it('cuentas','cuenta','Cuentas','Bancos, billeteras y efectivo')}
     ${it('categorias','cat','Categorías','Nombres y clasificación lujo / necesidad')}
     ${it('atajos','rayo','Atajos','Registra lo que repites con un toque')}
+    ${CLOUD_OK?it('cuenta','nube','Cuenta y nube',cloud.user?esc(cloud.user.email||'Sesión iniciada'):'Ve tus datos desde cualquier dispositivo'):''}
     ${it('seguridad','candado','Seguridad',pinGet()?'PIN activado':'Pon un PIN para abrir la app')}
     ${it('datos','datos','Importar y respaldos','Trae tu Excel, exporta tus datos')}
   </div></div>
@@ -954,7 +963,7 @@ V.datos={html(){const d=der();return`<div class="stack">
   <div class="card"><h3>Importar mi Excel</h3><p class="sub">Lee la hoja de movimientos (columnas FECHA, CATEGORIA, CONCEPTO, CANTIDAD, Salio de, REALIDAD). Funciona con .xlsx y .xlsm.</p>
     <label class="btn block" for="f-xls">Elegir archivo de Excel</label><input id="f-xls" type="file" accept=".xlsx,.xlsm,.xls" hidden>
     <p class="err" id="imp-err"></p></div>
-  <div class="card"><h3>Respaldos</h3><p class="sub">Tus datos viven solo en este navegador. Si borras los datos del navegador o cambias de celular, se pierden. Descarga un respaldo cada semana.</p>
+  <div class="card"><h3>Respaldos</h3><p class="sub">${cloud.user?'Tus datos se sincronizan con tu cuenta. Aun así, descarga un respaldo de vez en cuando: es una copia que tú controlas.':'Tus datos viven solo en este navegador. Si borras los datos del navegador o cambias de celular, se pierden. Descarga un respaldo cada semana.'}</p>
     <div class="stack">
       <button class="btn block" data-act="expJson">Descargar respaldo (.json)</button>
       <button class="btn block ghost" data-act="expXlsx">Exportar movimientos a Excel</button>
@@ -1519,6 +1528,14 @@ const ACT={
   editCuenta:el=>cuentaForm(Number(el.dataset.i)),
   editCat:el=>catForm(el.dataset.n||null),
   tour:()=>startTour(),
+  login:()=>authScreen(),
+  syncNow:()=>{if(!cloud.user){authScreen();return}toast('Sincronizando…');if(metaGet().dirty)cloudPush();else cloudSync()},
+  logout:()=>{const d=metaGet().dirty;confirmSheet('Cerrar sesión',d?'Tienes cambios que aún no se han subido. Intentaremos subirlos antes de cerrar.':'Se borrarán los datos de este dispositivo (siguen guardados en tu cuenta) y tendrás que iniciar sesión otra vez.','Cerrar sesión',doLogout,true)},
+  askOpen:()=>showAsk(),
+  askLater:()=>closeSheet(),
+  askSubir:()=>{closeSheet();cloud.ask=null;metaSet({ver:0,dirty:true,agreed:1});cloudPush()},
+  askNube:()=>{const a=cloud.ask;closeSheet();cloud.ask=null;applyCloud(a.row);cloud.lastOk=Date.now();cloud.changed=false;setState('ok');render()},
+  askLocal:()=>{const a=cloud.ask;closeSheet();cloud.ask=null;metaSet({ver:a.row?a.row.version:0,dirty:true,agreed:1});cloudPush()},
   aparModo:el=>{apar().modo=el.dataset.v;persist();applyAppearance();const y=scrollY;render();scrollTo(0,y)},
   aparAcento:el=>{apar().acento=el.dataset.v;persist();applyAppearance();const y=scrollY;render();scrollTo(0,y);toast('Color de acento: '+ACENTOS[el.dataset.v][0])},
   hmMove:el=>{const h=homeCfg(),i=h.order.indexOf(el.dataset.k),j=i+(+el.dataset.d);if(j<0||j>=h.order.length)return;[h.order[i],h.order[j]]=[h.order[j],h.order[i]];persist();const y=scrollY;render();scrollTo(0,y)},
@@ -1790,7 +1807,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='1.3';
+const APP_VERSION='2.0';
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1848,6 +1865,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.0',f:'2026-10-14',items:['Nuevo: <b>cuentas</b>. Inicia sesión con tu correo (te enviamos un código, sin contraseñas) y ve tus datos desde el celular, el computador o cualquier dispositivo. Está en Más › Cuenta y nube.','Tus datos se guardan en tu cuenta y también en el dispositivo: sin internet la app sigue funcionando y sube los cambios cuando vuelve la conexión.','La primera vez te preguntamos si subimos los datos que ya tienes en este dispositivo. Tu respaldo .json sigue funcionando igual.','Cada cuenta ve únicamente sus propios datos.']},
   {v:'1.3',f:'2026-10-14',items:['Nuevo: <b>Metas de ahorro</b> (Más › Metas de ahorro). Crea una meta, por ejemplo una moto de $10 M, y aparta dinero desde cualquier cuenta.','El dinero apartado sigue en tu cuenta: la Cartera te muestra el saldo completo y, debajo, cuánto tienes disponible y cuánto está guardado para metas.','Con una fecha, la meta te dice cuánto apartar cada mes. Al cumplirla puedes registrar el gasto con un toque.','Nuevo: <b>Lista de compras</b> para anotar rápido lo que va haciendo falta. Tacha lo que compres, marca lo urgente, pon precio estimado y compártela por WhatsApp.']},
   {v:'1.2',f:'2026-10-05',items:['Crea categorías nuevas directamente al registrar un gasto o ingreso, con el botón “+ Nueva” al final de las categorías.','La categoría queda seleccionada y no se pierde lo que ya habías escrito. Para editarlas o borrarlas sigue estando Más › Categorías.']},
   {v:'1.1',f:'2026-10-05',items:['En el celular, desliza un movimiento hacia la izquierda para borrarlo (puedes deshacerlo) y hacia la derecha para editarlo.','Cada vez que la app tenga mejoras te mostraremos esta ventana con lo nuevo.','Puedes ver el historial de cambios en Más › Novedades.']},
@@ -2236,10 +2254,10 @@ function renderSide(){
   <button class="btn block side-add" data-act="newMov"><span>+ Registrar</span><kbd title="Atajo de teclado">N</kbd></button>
   <nav class="side-nav"><span class="side-h">Principal</span>${b('inicio',T('inicio'),'Cartera')}${b('movs',T('movs'),'Movimientos')}${b('analisis',T('analisis'),'Análisis')}
   <div class="side-tools" style="display:grid;gap:2px"><span class="side-h">Herramientas</span>${b('metas',ICON.meta,'Metas de ahorro')}${b('compras',ICON.compras,'Lista de compras')}${b('patrimonio',ICON.pat,'Patrimonio neto')}${b('nomina',ICON.nomina,'Calculadora de nómina')}${b('fijos',ICON.repetir,'Pagos fijos')}${b('presupuesto',ICON.ppto,'Presupuesto')}${b('deudas',ICON.deuda,'Deudas y préstamos','<span class="cnt" hidden></span>')}</div>
-  <span class="side-h">Ajustes</span>${b('cuentas',ICON.cuenta,'Cuentas')}${b('categorias',ICON.cat,'Categorías')}${b('atajos',ICON.rayo,'Atajos')}${b('seguridad',ICON.candado,'Seguridad')}${b('perfil',ICON.paleta,'Personalizar')}${b('datos',ICON.datos,'Importar y respaldos')}${b('mas',$('.tab[data-tab=mas] svg').outerHTML,'Más')}${b('opinion','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>','Envíanos tu opinión')}</nav>
-  <p class="side-foot"><button class="link" data-go="novedades">Novedades · v${APP_VERSION}</button><br>Tus datos se guardan solo en este navegador. Descarga un respaldo cada semana.</p>`;
+  <span class="side-h">Ajustes</span>${b('cuentas',ICON.cuenta,'Cuentas')}${b('categorias',ICON.cat,'Categorías')}${b('atajos',ICON.rayo,'Atajos')}${CLOUD_OK?b('cuenta',ICON.nube,'Cuenta y nube'):''}${b('seguridad',ICON.candado,'Seguridad')}${b('perfil',ICON.paleta,'Personalizar')}${b('datos',ICON.datos,'Importar y respaldos')}${b('mas',$('.tab[data-tab=mas] svg').outerHTML,'Más')}${b('opinion','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>','Envíanos tu opinión')}</nav>
+  <p class="side-foot"><button class="link" data-go="novedades">Novedades · v${APP_VERSION}</button><br>${cloud.user?'Tus datos se sincronizan con tu cuenta.':'Tus datos se guardan solo en este navegador. Descarga un respaldo cada semana.'}</p>`;
 }
-const NARROW=new Set(['metas','compras','novedades','opinion','atajos','fijos','seguridad','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
+const NARROW=new Set(['metas','compras','novedades','opinion','atajos','fijos','seguridad','cuenta','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
 document.addEventListener('keydown',e=>{if(e.key!=='n'&&e.key!=='N')return;if(e.ctrlKey||e.metaKey||e.altKey||tourOn)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;if(!$('#sheet').hidden)return;e.preventDefault();openMovForm(null)});
 
 /* ============ render ============ */
@@ -2252,6 +2270,8 @@ function renderBanner(){
   let h='';
   if(S.demo)h+=`<div class="banner"><p><b>Estás viendo datos de ejemplo.</b> Importa tu Excel o empieza en blanco para usar tus propias cuentas.</p><div class="row"><button class="btn sm" data-go="datos">Importar mi Excel</button><button class="btn sm ghost" data-act="startBlank">Empezar en blanco</button></div></div>`;
   if(!storageOK)h+=`<div class="banner warn"><p><b>Este navegador no está guardando tus cambios.</b> Descarga un respaldo desde Más › Importar y respaldos antes de cerrar.</p></div>`;
+  if(cloud.state==='err'||cloud.state==='offline')h+=`<div class="banner warn"><p><b>${cloud.state==='offline'?'Sin conexión.':'No se pudo subir a la nube.'}</b> Tus cambios están a salvo en este dispositivo y se subirán solos.</p><div class="row"><button class="btn sm ghost" data-act="syncNow">Reintentar</button></div></div>`;
+  if(cloud.state==='conf')h+=`<div class="banner warn"><p><b>Falta decidir qué datos conservar.</b> Los de este dispositivo y los de tu cuenta son distintos.</p><div class="row"><button class="btn sm" data-act="askOpen">Elegir ahora</button></div></div>`;
   $('#banner').innerHTML=(UI.view==='inicio'||UI.view==='datos'||!storageOK)?h:'';
 }
 function render(){
@@ -2267,9 +2287,176 @@ function render(){
 renderSide();
 (function(){const h=(location.hash||'').slice(1);if(h&&V[h])UI.view=h})();
 applyAppearance();
-function startup(){const n=processFijos();render();if(n)setTimeout(()=>toast(`Se registraron ${n} pago${n>1?'s':''} fijo${n>1?'s':''}`),600);
+/* ============ nube: cuenta y sincronización (Supabase) ============ */
+const SB_URL='https://iobwejsklryixkzotpyh.supabase.co',SB_KEY='sb_publishable_1DfJ3EByCe7xYZIZEcryNg_sHEZOd-d';
+const SB_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js';
+const OAUTH_GOOGLE=false; /* ponlo en true cuando Google esté configurado en Supabase */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const stTxt=()=>({off:'Sin cuenta',ok:'Guardado en la nube',pend:'Pendiente de subir…',sync:'Sincronizando…',err:'No se pudo subir',offline:'Sin conexión: se subirá solo',conf:'Falta elegir qué datos conservar'}[cloud.state]||'');
+function metaRaw(){try{return JSON.parse(localStorage.getItem(SYNCK)||'null')}catch(e){return null}}
+function metaGet(){const m=metaRaw();return m&&cloud.user&&m.uid===cloud.user.id?m:{}}
+function metaSet(m){try{localStorage.setItem(SYNCK,JSON.stringify({...m,uid:cloud.user.id}))}catch(e){}}
+function setState(s){cloud.state=s;const e=$('#cl-st');if(e)e.textContent=stTxt();if(started)renderBanner()}
+function hs(j){let h=5381;for(let i=0;i<j.length;i++)h=((h<<5)+h+j.charCodeAt(i))|0;return j.length+':'+h}
+function cloudDirty(j){
+  if(!j||S.demo||cloud.applying)return;
+  const r=metaRaw();if(r&&r.h===hs(j))return;   /* guardado sin cambios reales: no se sube */
+  if(!cloud.user){if(r&&!r.dirty){r.dirty=true;try{localStorage.setItem(SYNCK,JSON.stringify(r))}catch(e){}}return}
+  const m=metaGet();if(!m.dirty){m.dirty=true;metaSet(m)}
+  if(!cloud.ask)setState('pend');cloudSched(1500);
+}
+function cloudSched(ms){clearTimeout(cloud.t);cloud.t=setTimeout(cloudPush,ms)}
+function loadSB(){if(window.supabase)return Promise.resolve();return new Promise((res,rej)=>{const s=document.createElement('script');s.src=SB_LIB;s.onload=res;s.onerror=()=>rej(new Error('lib'));document.head.appendChild(s);setTimeout(()=>rej(new Error('timeout')),8000)})}
+function wipeLocal(){['organizado.v1','organizado.ui',PINK,'organizado.pinfail',SYNCK,'organizado.askname'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})}
+function fail(e){console.warn('nube',e);const off=!navigator.onLine||/fetch|network|timeout/i.test(String(e&&e.message));setState(off?'offline':'err');cloudSched(30000)}
+function applyCloud(row){
+  cloud.applying=true;
+  try{S=row.data;S.demo=false;migrate();D=null;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){storageOK=false}metaSet({ver:row.version,dirty:false,h:hs(JSON.stringify(S))})}
+  finally{cloud.applying=false}
+  cloud.changed=true;
+}
+async function cloudPush(){
+  if(!cloud.user||cloud.ask||S.demo)return;
+  if(cloud.busy){cloudSched(800);return}
+  const m=metaGet();if(!m.dirty)return;
+  cloud.busy=true;setState('sync');let conflict=false;
+  try{
+    const snap=JSON.stringify(S),uid=cloud.user.id;let ver;
+    if(!m.ver){
+      const r=await sb.from('estados').insert({user_id:uid,data:JSON.parse(snap)});
+      if(r.error){if(r.error.code==='23505')conflict=true;else throw r.error}else ver=1;
+    }else{
+      const r=await sb.from('estados').update({data:JSON.parse(snap),version:m.ver+1}).eq('user_id',uid).eq('version',m.ver).select('version');
+      if(r.error)throw r.error;
+      if(!r.data||!r.data.length)conflict=true;else ver=m.ver+1;
+    }
+    if(!conflict){const again=JSON.stringify(S)!==snap;metaSet({ver,dirty:again,agreed:1,h:hs(snap)});cloud.lastOk=Date.now();setState(again?'pend':'ok');if(again)cloudSched(500)}
+  }catch(e){fail(e)}finally{cloud.busy=false}
+  if(conflict)await cloudSync();
+}
+async function cloudSync(){
+  if(!cloud.user||cloud.busy)return;
+  cloud.busy=true;cloud.last=Date.now();setState('sync');let next=null;
+  try{
+    const raw=metaRaw();
+    if(raw&&raw.uid!==cloud.user.id){wipeLocal();S=demo();D=null;cloud.changed=true}   /* datos locales de otra cuenta */
+    const r=await sb.from('estados').select('data,version,updated_at').eq('user_id',cloud.user.id).maybeSingle();
+    if(r.error)throw r.error;
+    const row=r.data,m=metaGet();
+    if(!row){
+      if(S.demo){metaSet({ver:0,dirty:false});setState('ok')}
+      else if(m.agreed){metaSet({ver:0,dirty:true,agreed:1});next=cloudPush}
+      else next=()=>cloudAsk('subir',null);
+    }else if(S.demo){applyCloud(row);cloud.lastOk=Date.now();setState('ok')}
+    else if(m.ver===row.version){if(m.dirty)next=cloudPush;else{if(!m.h)metaSet({...m,h:hs(JSON.stringify(S))});cloud.lastOk=Date.now();setState('ok')}}
+    else if(m.ver!==undefined&&!m.dirty){applyCloud(row);cloud.lastOk=Date.now();setState('ok')}
+    else next=()=>cloudAsk('elegir',row);
+  }catch(e){fail(e)}finally{cloud.busy=false}
+  if(cloud.changed&&started){cloud.changed=false;closeSheet();render()}
+  if(next)await next();
+  else if(metaGet().dirty&&!cloud.ask)cloudSched(800);
+}
+function cloudAsk(kind,row){cloud.ask={kind,row};setState('conf');if(started)askSoon()}
+function askSoon(n=0){if(!cloud.ask)return;const busy=!$('#sheet').hidden||tourOn||lockOn||!$('#tour').hidden;if(!busy)showAsk();else if(n<60)setTimeout(()=>askSoon(n+1),1000)}
+const nMov=o=>(o&&o.movs?o.movs.length:0).toLocaleString('es-CO');
+function showAsk(){
+  const a=cloud.ask;if(!a)return;
+  if(a.kind==='subir')openSheet(`<h3>Sube tus datos a tu cuenta</h3><p style="margin:0 0 16px">Este dispositivo tiene <b>${nMov(S)} movimientos</b>. ¿Los subimos a tu cuenta para verlos desde cualquier dispositivo?</p><div class="stack"><button class="btn block" data-act="askSubir">Sí, subirlos</button><button class="btn block ghost" data-act="askLater">Ahora no</button></div>`);
+  else{const f=a.row.updated_at?new Date(a.row.updated_at).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'}):'';
+    openSheet(`<h3>Tus datos están en dos lugares</h3><p style="margin:0 0 16px">Este dispositivo y tu cuenta tienen datos distintos. Elige cuáles conservar; los otros se reemplazan.</p><div class="stack"><button class="btn block" data-act="askNube">Usar los de la nube<small class="bsub">${nMov(a.row.data)} movimientos · ${f}</small></button><button class="btn block ghost" data-act="askLocal">Usar los de este dispositivo<small class="bsub">${nMov(S)} movimientos</small></button><button class="btn block ghost" data-act="expJson">Descargar antes un respaldo de este dispositivo</button><button class="link" data-act="askLater" style="color:var(--muted)">Decidir después</button></div>`)}
+}
+async function gotSession(s){
+  if(cloud.user&&cloud.user.id===s.user.id)return;
+  cloud.user=s.user;
+  const A=$('#auth');A.hidden=true;A.innerHTML='';document.body.style.overflow='';
+  try{localStorage.removeItem(MODEK)}catch(e){}
+  await Promise.race([cloudSync(),sleep(7000)]);
+  if(!started)startup();
+  askSoon();
+}
+async function boot(){
+  if(!CLOUD_OK){startup();return}
+  let ses=null;
+  try{
+    await loadSB();
+    sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}});
+    sb.auth.onAuthStateChange((ev,s)=>{
+      if(ev==='SIGNED_OUT'&&cloud.user&&!cloud.leaving){cloud.user=null;setState('off')}
+      else if(ev==='SIGNED_IN'&&s&&!cloud.user)setTimeout(()=>gotSession(s),0)});
+    ses=(await sb.auth.getSession()).data.session;
+  }catch(e){sb=null}
+  if(!sb){startup();return}                       /* sin internet o sin la librería: la app sigue en modo local */
+  if(ses){await gotSession(ses);return}
+  let modo=null;try{modo=localStorage.getItem(MODEK)}catch(e){}
+  if(modo==='local'||metaRaw()){startup();return}
+  authScreen();
+}
+function authScreen(){
+  const A=$('#auth');if(!sb){toast('Las cuentas necesitan conexión a internet');return}
+  A.hidden=false;document.body.style.overflow='hidden';let email='';
+  const close=()=>{A.hidden=true;A.innerHTML='';document.body.style.overflow=''};
+  const msg=(t,bad=true)=>{const m=$('#au-msg',A);if(m){m.textContent=t;m.classList.toggle('bad',bad)}};
+  const errTxt=e=>{const s=String(e&&(e.code||e.message)||'');
+    if(/rate|429|many|seconds/i.test(s))return'Se enviaron muchos correos. Espera un momento e intenta de nuevo.';
+    if(/otp_expired|expired|invalid|token/i.test(s))return'Ese código no es válido o ya venció. Pide uno nuevo.';
+    if(/fetch|network/i.test(s))return'No hay conexión. Revisa tu internet e intenta de nuevo.';
+    return'No se pudo completar. Intenta de nuevo.'};
+  const frame=inner=>{A.innerHTML=`<div class="lock-in au"><div class="tour-logo">ORGANIZADO<b>$</b></div>${inner}</div>`};
+  const stepMail=()=>{
+    frame(`<p class="lock-hi">Entra a tu cuenta</p><p class="muted" style="margin:0">Con tu cuenta ves tus finanzas desde el celular, el computador o cualquier dispositivo. Te enviamos un código a tu correo, sin contraseñas.</p>
+      <input class="inp au-mail" id="au-mail" type="email" inputmode="email" autocomplete="email" placeholder="tucorreo@ejemplo.com" value="${esc(email)}"><p class="pin-msg" id="au-msg" role="status"></p>
+      <button class="btn block" id="au-send">Enviar código</button>${OAUTH_GOOGLE?'<button class="btn block ghost" id="au-g">Continuar con Google</button>':''}
+      <button class="link" id="au-local" style="color:var(--muted)">${started?'Cancelar':'Usar solo en este dispositivo'}</button><p class="small muted" style="margin:6px 0 0">Cada cuenta ve únicamente sus propios datos.</p>`);
+    const inp=$('#au-mail',A),btn=$('#au-send',A);
+    const go=async()=>{email=inp.value.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg('Escribe un correo válido.');return}
+      btn.disabled=true;btn.textContent='Enviando…';msg('',false);
+      const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});
+      btn.disabled=false;btn.textContent='Enviar código';
+      if(error){msg(errTxt(error));return}stepCode()};
+    btn.onclick=go;inp.onkeydown=e=>{if(e.key==='Enter')go()};
+    $('#au-local',A).onclick=()=>{if(!started){try{localStorage.setItem(MODEK,'local')}catch(e){}}close();if(!started)startup()};
+    const g=$('#au-g',A);if(g)g.onclick=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+  };
+  const stepCode=()=>{
+    frame(`<p class="lock-hi">Revisa tu correo</p><p class="muted" style="margin:0">Enviamos un mensaje a <b>${esc(email)}</b>. Toca el enlace del correo o escribe aquí el código que trae.</p>
+      <input class="inp" id="au-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Código"><p class="pin-msg" id="au-msg" role="status"></p>
+      <button class="btn block" id="au-ok">Entrar</button><button class="link" id="au-resend" style="color:var(--muted)" disabled>Reenviar código en 45 s</button><button class="link" id="au-back" style="color:var(--muted)">Cambiar correo</button>
+      <p class="small muted" style="margin:6px 0 0">Si no llega, revisa la carpeta de spam.</p>`);
+    const inp=$('#au-code',A),btn=$('#au-ok',A),rs=$('#au-resend',A);inp.focus();
+    let n=45;const tm=setInterval(()=>{if(!rs.isConnected){clearInterval(tm);return}n--;if(n<=0){clearInterval(tm);rs.disabled=false;rs.textContent='Reenviar código'}else rs.textContent=`Reenviar código en ${n} s`},1000);
+    const go=async()=>{const token=inp.value.replace(/\D/g,'');if(token.length<6){msg('Escribe el código completo.');return}
+      btn.disabled=true;btn.textContent='Verificando…';msg('',false);
+      const{data,error}=await sb.auth.verifyOtp({email,token,type:'email'});
+      if(error||!data.session){btn.disabled=false;btn.textContent='Entrar';msg(errTxt(error));return}
+      gotSession(data.session)};
+    btn.onclick=go;inp.onkeydown=e=>{if(e.key==='Enter')go()};
+    rs.onclick=async()=>{rs.disabled=true;const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname}});if(error){rs.disabled=false;msg(errTxt(error))}else{msg('Enviamos un código nuevo.',false);n=45;rs.textContent='Reenviar código en 45 s'}};
+    $('#au-back',A).onclick=stepMail;
+  };
+  stepMail();
+}
+async function doLogout(){
+  closeSheet();
+  if(metaGet().dirty){await cloudPush();if(metaGet().dirty){toast('No se pudo subir tu último cambio. No se cerró la sesión.');return}}
+  cloud.leaving=true;try{await sb.auth.signOut({scope:'local'})}catch(e){}
+  wipeLocal();cloud.user=null;cloud.ask=null;cloud.leaving=false;setState('off');S=demo();D=null;UI.view='inicio';render();authScreen();
+}
+V.cuenta={html(){
+  const u=cloud.user;
+  if(!u)return`<div class="card"><b style="font-size:15px">Sin cuenta</b><p class="small muted" style="margin:6px 0 14px">Tus datos están solo en este dispositivo. Con una cuenta los ves desde cualquier dispositivo y quedan guardados en la nube.</p><button class="btn block" data-act="login">Iniciar sesión o crear cuenta</button></div>`;
+  const t=cloud.lastOk?new Date(cloud.lastOk).toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit'}):'';
+  return`<div class="card"><div class="prow-top" style="align-items:center"><span><b style="font-size:15px">${esc(u.email||'Tu cuenta')}</b><br><span class="small muted" id="cl-st">${stTxt()}</span>${t?`<span class="small muted"> · ${t}</span>`:''}</span></div>
+    <div class="stack" style="margin-top:14px"><button class="btn block" data-act="syncNow">Sincronizar ahora</button><button class="btn block ghost" data-act="logout" style="color:var(--neg)">Cerrar sesión</button></div></div>
+    <p class="small muted" style="margin-top:14px">Tus datos se guardan en este dispositivo y en tu cuenta. Sin internet la app sigue funcionando y sube los cambios cuando vuelve la conexión. Cada cuenta ve únicamente sus propios datos. Al cerrar sesión se borran los datos de este dispositivo (siguen en tu cuenta).</p>`}};
+document.addEventListener('visibilitychange',()=>{
+  if(!cloud.user)return;
+  if(document.hidden){if(metaGet().dirty)cloudPush()}
+  else if(Date.now()-cloud.last>20000&&!lockOn&&!cloud.ask&&started)cloudSync()});
+addEventListener('online',()=>{if(cloud.user)cloudSync()});
+
+function startup(){started=true;const n=processFijos();render();if(n)setTimeout(()=>toast(`Se registraron ${n} pago${n>1?'s':''} fijo${n>1?'s':''}`),600);
   if(!tourSeen()){verMark();setTimeout(startTour,700)}else askNameOnOpen(()=>showNovedades(showAlertsOnOpen))}
-if(pinGet())showLock(startup);else startup();
+if(pinGet())showLock(boot);else boot();
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render())}catch(e){}
 new MutationObserver(()=>render()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(charts.length)render()});

@@ -2,7 +2,7 @@
 
 App web de finanzas personales pensada para el celular: registro rápido de gastos, ingresos y traspasos, cartera con saldo por cuenta, análisis con gráficos, presupuesto mensual, control de deudas y préstamos con recordatorios de pago, metas de ahorro (con lo disponible y lo apartado en cada cuenta) y una lista de compras rápida.
 
-**Los datos de cada persona se guardan solo en su propio navegador.** Nada se envía a ningún servidor. Por eso conviene descargar un respaldo cada cierto tiempo desde *Más › Importar y respaldos*.
+**Cuentas y nube (v2.0).** Quien inicia sesión con su correo (código de un solo uso, sin contraseñas) ve sus datos desde cualquier dispositivo. Los datos se guardan en el dispositivo y en una base de datos Supabase; cada cuenta ve únicamente su propia fila (seguridad por fila). Sin sesión, la app sigue funcionando solo con el navegador. En cualquier caso conviene descargar un respaldo de vez en cuando desde *Más › Importar y respaldos*.
 
 ## Publicar con GitHub Pages
 
@@ -12,10 +12,17 @@ App web de finanzas personales pensada para el celular: registro rápido de gast
 4. En *Build and deployment* elige **Deploy from a branch**, rama `main`, carpeta `/ (root)` y guarda.
 5. En uno o dos minutos la app queda en `https://TU-USUARIO.github.io/organizado/`. Ese es el link para compartir.
 
+## Base de datos (Supabase)
+
+1. Crea un proyecto en [supabase.com](https://supabase.com) y ejecuta `supabase/setup.sql` en *SQL Editor*.
+2. En *Authentication › Sign In / Providers* deja activado Email, y en *URL Configuration* pon la dirección de la página (Site URL y Redirect URLs).
+3. En *Authentication › Email Templates* agrega `{{ .Token }}` a las plantillas *Magic Link* y *Confirm signup* para que el correo traiga el código.
+4. La URL del proyecto y la clave publicable (`sb_publishable_…`) van al inicio del módulo «nube» de `index.html`. Nunca pongas aquí la clave `secret` ni `service_role`.
+
 ## Instalar en el celular
 
 Abre el link en el navegador y elige **Agregar a pantalla de inicio** (Safari: botón Compartir; Chrome: menú ⋮).
 
 ## Actualizar
 
-Reemplaza `index.html` en el repositorio por la versión nueva. Los datos de las personas no se borran al actualizar, porque viven en su navegador.
+Reemplaza `index.html` en el repositorio por la versión nueva. Los datos de las personas no se borran al actualizar: viven en su navegador y, si tienen cuenta, en la nube.
