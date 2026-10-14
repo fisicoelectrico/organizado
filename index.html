@@ -2418,10 +2418,10 @@ function authScreen(){
     const g=$('#au-g',A);if(g)g.onclick=()=>sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
   };
   const stepCode=()=>{
-    frame(`<p class="lock-hi">Revisa tu correo</p><p class="muted" style="margin:0">Enviamos un mensaje a <b>${esc(email)}</b>. Toca el enlace del correo o escribe aquí el código que trae.</p>
-      <input class="inp" id="au-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Código"><p class="pin-msg" id="au-msg" role="status"></p>
+    frame(`<p class="lock-hi">Revisa tu correo</p><p class="muted" style="margin:0">Enviamos un mensaje a <b>${esc(email)}</b>. Ábrelo y toca el enlace para entrar. Si tu correo trae un código, escríbelo aquí.</p>
+      <input class="inp" id="au-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Código (si tu correo lo trae)"><p class="pin-msg" id="au-msg" role="status"></p>
       <button class="btn block" id="au-ok">Entrar</button><button class="link" id="au-resend" style="color:var(--muted)" disabled>Reenviar código en 45 s</button><button class="link" id="au-back" style="color:var(--muted)">Cambiar correo</button>
-      <p class="small muted" style="margin:6px 0 0">Si no llega, revisa la carpeta de spam.</p>`);
+      <p class="small muted" style="margin:6px 0 0">Si no llega en un minuto, revisa spam o correo no deseado.</p>`);
     const inp=$('#au-code',A),btn=$('#au-ok',A),rs=$('#au-resend',A);inp.focus();
     let n=45;const tm=setInterval(()=>{if(!rs.isConnected){clearInterval(tm);return}n--;if(n<=0){clearInterval(tm);rs.disabled=false;rs.textContent='Reenviar código'}else rs.textContent=`Reenviar código en ${n} s`},1000);
     const go=async()=>{const token=inp.value.replace(/\D/g,'');if(token.length<6){msg('Escribe el código completo.');return}
