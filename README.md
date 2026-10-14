@@ -19,9 +19,14 @@ App web de finanzas personales pensada para el celular: registro rápido de gast
 3. El login por correo y contraseña no necesita configuración extra. Opcional: con un correo propio (SMTP) se pueden editar las plantillas de *Magic Link* y *Confirm signup* para que el correo traiga un código (`{{ .Token }}`) además del enlace. Con el correo por defecto de Supabase el login funciona con el enlace.
 4. La URL del proyecto y la clave publicable (`sb_publishable_…`) van al inicio del módulo «nube» de `index.html`. Nunca pongas aquí la clave `secret` ni `service_role`.
 
-## Instalar en el celular
+## Instalar la app
 
-Abre el link en el navegador y elige **Agregar a pantalla de inicio** (Safari: botón Compartir; Chrome: menú ⋮).
+La página es una app instalable (PWA): tiene manifiesto, íconos propios y un *service worker* (`sw.js`) que guarda una copia para abrirla sin internet. En la app, **Más › Instalar la app** explica los pasos del dispositivo:
+- **Android (Chrome):** menú ⋮ › *Instalar app*.
+- **iPhone (Safari):** Compartir › *Agregar a pantalla de inicio*.
+- **Computador (Chrome o Edge):** ícono de instalar en la barra de direcciones.
+
+Al publicar cambios, sube el número de `V` en `sw.js` si cambias los archivos que guarda (íconos o manifiesto); `index.html` siempre se baja de la red primero.
 
 ## Actualizar
 
