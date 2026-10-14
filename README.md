@@ -1,6 +1,6 @@
 # ORGANIZADO$
 
-App web de finanzas personales pensada para el celular: registro rápido de gastos, ingresos y traspasos, cartera con saldo por cuenta, análisis con gráficos, presupuesto mensual y control de deudas y préstamos con recordatorios de pago.
+App web de finanzas personales pensada para el celular: registro rápido de gastos, ingresos y traspasos, cartera con saldo por cuenta, análisis con gráficos, presupuesto mensual, control de deudas y préstamos con recordatorios de pago, metas de ahorro (con lo disponible y lo apartado en cada cuenta) y una lista de compras rápida.
 
 **Los datos de cada persona se guardan solo en su propio navegador.** Nada se envía a ningún servidor. Por eso conviene descargar un respaldo cada cierto tiempo desde *Más › Importar y respaldos*.
 
