@@ -998,18 +998,21 @@ function activoValor(a,D){
   if(a.tipo==='bien'){const vida=+a.vida||0;if(!vida)return +a.compra||0;const yrs=(new Date(D)-new Date(a.f))/(365.25*864e5);return Math.max(0,(+a.compra||0)*(1-yrs/vida))}
   let v=0;for(const h of a.hist||[])if(h.f<=D)v=h.v;return v;
 }
+function nomConfigured(){return !!(S.nomina&&+S.nomina.salario>0)}
 function patSeries(){
   const d=der();if(d.pat)return d.pat;
   const asc=[...d.movs].reverse(),from=d.movs.length?d.first:today(),to=today()>d.last?today():d.last;
   const inc=!!S.pat.invCosto,acts=S.activos||[];acts.forEach(a=>{if(a.hist)a.hist.sort((x,y)=>x.f.localeCompare(y.f))});
   let first=from;acts.forEach(a=>{if(a.f<first)first=a.f});S.deudas.forEach(x=>{if(x.f<first)first=x.f});
+  const nomOk=nomConfigured(),dia=nomOk?calcNomina(NOM()).neto/30:0,tn=[];let lastPay=null;
   let cash=0,inv=0,i=0;const out=[];
   for(let f=first;f<=to;f=addDays(f,1)){
-    while(i<asc.length&&asc[i].f<=f){const x=asc[i];cash+=x.m;if(norm(x.cat)==='inversion')inv-=x.m;i++}
+    while(i<asc.length&&asc[i].f<=f){const x=asc[i];cash+=x.m;if(norm(x.cat)==='inversion')inv-=x.m;if(x.m>0&&norm(x.cat)==='sueldo')lastPay=x.f;i++}
     let cob=0,deb=0;for(const x of S.deudas){if(f<x.f)continue;const s=Math.max(0,x.monto-(x.abonos||[]).reduce((a,b)=>b.f<=f?a+b.m:a,0));if(x.tipo==='me_deben')cob+=s;else deb+=s}
     let act=0;for(const a of acts)act+=activoValor(a,f);
     const invC=inc?Math.max(0,inv):0;
-    out.push({f,cash,inv:invC,act,cob,deb,total:cash+invC+act+cob-deb});
+    const nom=nomOk&&lastPay?Math.round(dia*Math.min(30,Math.max(0,Math.round((new Date(f)-new Date(lastPay))/864e5)))):0;
+    out.push({f,cash,inv:invC,act,cob,deb,nom,total:cash+invC+act+cob-deb+(S.pat.nom?nom:0)});
   }
   d.pat=out;return out;
 }
@@ -1018,7 +1021,7 @@ const sgn=n=>(n>0?'+':'')+fmt(n);
 V.patrimonio={html(){
   const P=patSeries(),n=P.length,cur=P[n-1],y=P[n-2]||cur,m30=P[Math.max(0,n-31)];
   const dY=cur.total-y.total,d30=cur.total-m30.total,meta=+S.pat.meta||0;
-  const comp=[['Cuentas y efectivo',cur.cash,'var(--s1)'],...(S.pat.invCosto?[['Inversiones (lo invertido)',cur.inv,'var(--s3)']]:[]),['Bienes y otros activos',cur.act,'var(--s7)'],['Me deben',cur.cob,'var(--s4)']];
+  const comp=[['Cuentas y efectivo',cur.cash,'var(--s1)'],...(S.pat.invCosto?[['Inversiones (lo invertido)',cur.inv,'var(--s3)']]:[]),['Bienes y otros activos',cur.act,'var(--s7)'],['Me deben',cur.cob,'var(--s4)'],...(S.pat.nom&&cur.nom?[['Nómina devengada por cobrar',cur.nom,'var(--s2)']]:[])];
   const posT=comp.reduce((a,c)=>a+Math.max(0,c[1]),0)||1;
   const per=[['30','30 días'],['90','90 días'],['365','1 año'],['todo','Todo']];
   const rows=[];for(let k=n-1;k>=Math.max(0,n-UI.patN);k--){const p=P[k],q=P[k-1];rows.push({f:p.f,t:p.total,dlt:q?p.total-q.total:0,pc:q&&q.total?(p.total-q.total)/Math.abs(q.total):0})}
@@ -1032,19 +1035,22 @@ V.patrimonio={html(){
   <div class="card"><div class="bar" style="height:12px">${comp.filter(c=>c[1]>0).map(c=>`<i style="width:${c[1]/posT*100}%;background:${c[2]}"></i>`).join('')}</div>
     <div class="catlist">${comp.map(c=>`<div class="catrow"><i style="background:${c[2]}"></i><span>${c[0]}</span><span class="r amt">${fmt(c[1])}</span></div>`).join('')}
     <div class="catrow"><i style="background:var(--neg)"></i><span>Debo</span><span class="r ${cur.deb>0?'neg':''} amt">${cur.deb>0?'−':''}${fmt(cur.deb)}</span></div>
-    <div class="catrow" style="border-top:2px solid var(--line)"><i style="background:transparent"></i><b>Patrimonio neto</b><span class="r amt">${fmt(cur.total)}</span></div></div></div></div></div>
+    <div class="catrow" style="border-top:2px solid var(--line)"><i style="background:transparent"></i><b>Patrimonio neto</b><span class="r amt">${fmt(cur.total)}</span></div>
+    ${!S.pat.nom&&cur.nom?`<div class="catrow"><i style="background:transparent"></i><span class="muted">Nómina devengada por cobrar (no incluida)</span><span class="r muted amt">${fmt(cur.nom)}</span></div>`:''}</div></div></div></div>
   <div class="col"><div class="blk" style="order:4"><div class="sec-h"><h2>Evolución diaria</h2></div>
   <div class="stack"><div class="seg" role="group" aria-label="Periodo">${per.map(([v,l])=>`<button data-act="patPer" data-v="${v}" aria-pressed="${UI.patPer===v}">${l}</button>`).join('')}</div>
   <div class="card"><div class="chart"><canvas id="c-pat" aria-label="Patrimonio neto diario"></canvas></div></div></div></div><div class="blk" style="order:5"><div class="sec-h"><h2>Bienes e inversiones</h2><button class="link" data-act="editActivo">Agregar</button></div>
   <div class="list">${acts.length?acts.map(a=>`<button class="mov" data-act="editActivo" data-id="${a.id}"><span class="ico" style="--h:${a.tipo==='bien'?250:150}">${a.tipo==='bien'?'BI':a.tipo==='inversion'?'IN':'OT'}</span><span class="mov-main"><span class="mov-t">${esc(a.nombre)}</span><span class="mov-s">${a.tipo==='bien'?(+a.vida?`Bien · se deprecia en ${a.vida} años`:'Bien'):a.tipo==='inversion'?'Inversión · valor actualizado a mano':'Otro activo'}</span></span><span class="mov-a amt">${fmt(activoValor(a,today()))}</span></button>`).join(''):'<div class="empty">Agrega tu portátil, celular, bicicleta, fondos o acciones para que cuenten en tu patrimonio.</div>'}</div>
-  <div class="card" style="margin-top:12px"><label class="prow-top" style="align-items:center;gap:12px;cursor:pointer"><span><b style="font-size:14px">Sumar lo que he invertido</b><br><span class="small muted">Cuenta como activo el dinero de la categoría Inversión, al costo. Déjalo apagado si ya registras el valor real de tus inversiones arriba.</span></span><input type="checkbox" id="pat-inv" ${S.pat.invCosto?'checked':''} style="width:22px;height:22px;flex:0 0 auto"></label></div></div></div>
+  <div class="card" style="margin-top:12px"><label class="prow-top" style="align-items:center;gap:12px;cursor:pointer"><span><b style="font-size:14px">Sumar lo que he invertido</b><br><span class="small muted">Cuenta como activo el dinero de la categoría Inversión, al costo. Déjalo apagado si ya registras el valor real de tus inversiones arriba.</span></span><input type="checkbox" id="pat-inv" ${S.pat.invCosto?'checked':''} style="width:22px;height:22px;flex:0 0 auto"></label></div>
+  <div class="card" style="margin-top:12px"><label class="prow-top" style="align-items:center;gap:12px;cursor:${nomConfigured()?'pointer':'default'}"><span><b style="font-size:14px">Sumar mi nómina devengada</b><br><span class="small muted">${nomConfigured()?'Cuenta lo que ya trabajaste desde tu último pago de Sueldo (días × neto ÷ 30, máximo 30 días). Es un estimado: se pone en cero cuando registras el pago.':'Primero configura tu salario en Más › Calculadora de nómina.'}</span></span><input type="checkbox" id="pat-nom" ${S.pat.nom?'checked':''} ${nomConfigured()?'':'disabled'} style="width:22px;height:22px;flex:0 0 auto"></label></div></div></div>
   </div>
   <div class="blk-full"><div class="sec-h"><h2>Histórico diario</h2><span class="small muted">${n.toLocaleString('es-CO')} días</span></div>
   <div class="card" style="padding:6px 0"><div class="hist-wrap"><table class="hist"><thead><tr><th>Fecha</th><th>Patrimonio</th><th>Cambio</th><th>%</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${dayLabel(r.f)} ${r.f.slice(2,4)}</td><td class="amt">${fmt(r.t)}</td><td class="amt ${r.dlt>0?'pos':r.dlt<0?'neg':'muted'}">${r.dlt?sgn(r.dlt):'—'}</td><td class="${r.pc>0?'pos':r.pc<0?'neg':'muted'}">${r.pc?(r.pc*100).toLocaleString('es-CO',{maximumFractionDigits:2,signDisplay:'always'})+'%':'—'}</td></tr>`).join('')}</tbody></table></div>
   ${n>UI.patN?`<div style="padding:10px 16px"><button class="btn block ghost sm" data-act="patMore">Ver 30 días más</button></div>`:''}</div>
-  <p class="small muted" style="margin-top:14px">Patrimonio = saldo de tus cuentas + bienes e inversiones + lo que te deben − lo que debes. Se calcula solo para cada día con tus movimientos, abonos y valores de activos.</p></div>`;
+  <p class="small muted" style="margin-top:14px">Patrimonio = saldo de tus cuentas + bienes e inversiones + lo que te deben − lo que debes (más tu nómina devengada si la activas). Se calcula solo para cada día con tus movimientos, abonos y valores de activos.</p></div>`;
 },mount(){
   $('#pat-inv').onchange=e=>{S.pat.invCosto=e.target.checked;save();render()};
+  $('#pat-nom').onchange=e=>{S.pat.nom=e.target.checked;save();render()};
   const P=patSeries();const k=UI.patPer==='todo'?P:P.slice(-(+UI.patPer));const S8=SER();
   mkChart('c-pat',{type:'line',data:{labels:k.map(p=>p.f),datasets:[{label:'Patrimonio',data:k.map(p=>p.total),borderColor:S8[6],borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:.2,fill:true,backgroundColor:S8[6]+'22'}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{...tipStyle(),displayColors:false,callbacks:{title:i=>dayLabel(i[0].label)+' '+i[0].label.slice(0,4),label:c=>fmt(c.parsed.y),afterLabel:c=>{const p=k[c.dataIndex],q=k[c.dataIndex-1];return q?'Cambio: '+sgn(p.total-q.total):''}}}},
@@ -1193,7 +1199,7 @@ V.nomina={html(){
   </div>`;
 },mount(){
   const n=NOM();let tm;
-  const upd=()=>{persist();const c=calcNomina(n),L=c.L;
+  const upd=()=>{D=null;persist();const c=calcNomina(n),L=c.L;
     $('#n-top').innerHTML=nomTop(c);$('#n-det').innerHTML=nomDet(c);$('#n-prest').innerHTML=nomPrest(prestaciones(n,c));
     $('#n-vh').innerHTML=`<span class="amt">${fmt(c.vh)}</span>`;$('#n-vhtxt').textContent=`Salario ÷ ${L.jornada*5} horas al mes (${L.jornada} h × 5). Recargo dominical o festivo en ${monthLabel(n.mes)}: ${L.dom}%.`;
     c.hx.forEach(x=>{$('#n-v-'+x.k).textContent=fmt(x.v);$('#n-p-'+x.k).textContent=x.rec?`Se suma ${x.p}% del valor hora`:`Se paga al ${x.p}% del valor hora`});
@@ -1576,8 +1582,8 @@ const ACT={
   patMore:()=>{UI.patN+=30;render()},
   setMeta:()=>metaForm(),
   editActivo:el=>activoForm(el.dataset.id?Number(el.dataset.id):null),
-  nomAddOtro:()=>{NOM().otros.push({n:'',v:0});persist();render()},
-  nomDelOtro:el=>{NOM().otros.splice(+el.dataset.i,1);persist();render()},
+  nomAddOtro:()=>{NOM().otros.push({n:'',v:0});save();render()},
+  nomDelOtro:el=>{NOM().otros.splice(+el.dataset.i,1);save();render()},
   nomRegistrar,
   wipe:()=>confirmSheet('Borrar todo','Se eliminarán todos los movimientos, cuentas, presupuesto, deudas, metas y la lista de compras de este navegador. Descarga un respaldo antes si lo necesitas.','Borrar todo',()=>{const pf=S.perfil;S=blank();S.perfil=pf;save();toast('Listo, empiezas en blanco');go('inicio')},true),
   startBlank:()=>confirmSheet('Empezar en blanco','Se quitarán los datos de ejemplo y quedarás con tres cuentas vacías (Banco, Billetera digital y Efectivo) que puedes renombrar.','Empezar',()=>{const pf=S.perfil;S=blank();S.perfil=pf;save();go('cuentas')}),
@@ -1818,7 +1824,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.3';
+const APP_VERSION='2.4';
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1876,6 +1882,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.4',f:'2026-10-16',items:['Patrimonio muestra tu <b>nómina devengada por cobrar</b> (lo trabajado desde tu último sueldo) como línea aparte, y un interruptor para sumarla o no a tu patrimonio.']},
   {v:'2.3',f:'2026-10-14',items:['Al escribir tu contraseña puedes <b>verla con el ojito</b>, y al crear la cuenta o cambiarla la app te avisa en vivo si las dos coinciden.']},
   {v:'2.2',f:'2026-10-14',items:['Ahora puedes <b>instalar la app</b> en tu celular o computador (Más › Instalar la app): queda con su propio ícono, se abre sin la barra del navegador y también abre sin internet.']},
   {v:'2.1',f:'2026-10-14',items:['Ahora puedes entrar con <b>correo y contraseña</b>, crear tu cuenta con una contraseña y recuperarla si la olvidas.','Si ya tienes cuenta, crea tu contraseña en Más › Cuenta y nube › Crear o cambiar contraseña. El enlace por correo sigue disponible.']},
