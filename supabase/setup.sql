@@ -28,11 +28,24 @@ grant select, insert, update, delete on public.estados to authenticated;
 
 -- 3. updated_at se pone solo en cada cambio
 create or replace function public.tocar_updated_at() returns trigger
-language plpgsql as $$ begin new.updated_at := now(); return new; end $$;
+language plpgsql set search_path = '' as $$ begin new.updated_at := now(); return new; end $$;
 
 drop trigger if exists estados_updated_at on public.estados;
 create trigger estados_updated_at before update on public.estados
   for each row execute function public.tocar_updated_at();
+
+-- 4. Endurecimiento (v2.4.1): quita permisos que la app no usa
+revoke all on public.estados from anon;
+revoke truncate, trigger, references on public.estados from authenticated;
+do $$ begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+  end if;
+end $$;
+
+-- 5. Tope de tamaño por fila (5 MB): evita que una cuenta llene el plan gratis (500 MB)
+alter table public.estados drop constraint if exists estados_tamano;
+alter table public.estados add constraint estados_tamano check (pg_column_size(data) < 5242880);
 
 -- Después, en la consola (no es SQL):
 --  · Authentication → Sign In / Providers → Email: activado (enlace mágico / código).
@@ -40,3 +53,5 @@ create trigger estados_updated_at before update on public.estados
 --    y agrega esa misma URL en Redirect URLs.
 --  · Opcional: Authentication → Settings → desactivar "Allow new users to sign up"
 --    después de que entren los 6, para que nadie más cree cuenta.
+--  · Authentication → Providers → Email: activar "Prevent use of leaked passwords"
+--    y subir la longitud mínima de contraseña a 10.
