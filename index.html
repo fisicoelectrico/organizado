@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://iobwejsklryixkzotpyh.supabase.co wss://iobwejsklryixkzotpyh.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1D285A">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -559,7 +561,7 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
 <div class="lock" id="auth" hidden role="dialog" aria-modal="true" aria-label="Iniciar sesión"></div>
 <div class="tour" id="tour" hidden><div class="tour-block"></div><div class="tour-hole" id="tour-hole"></div><div class="tour-card" id="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t"></div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js?sri=1" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 "use strict";
 /* ============ utilidades ============ */
@@ -1271,7 +1273,7 @@ function parseRegistro(X,wb){
 }
 /*IMPORT-END*/
 let xlsxP=null;
-function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);return xlsxP||=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=()=>res(window.XLSX);s.onerror=()=>{xlsxP=null;rej(new Error('No se pudo cargar el lector de Excel. Revisa tu conexión.'))};document.head.appendChild(s)})}
+function loadXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);return xlsxP||=new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js?sri=1';s.integrity='sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw';s.crossOrigin='anonymous';s.onload=()=>res(window.XLSX);s.onerror=()=>{xlsxP=null;rej(new Error('No se pudo cargar el lector de Excel. Revisa tu conexión.'))};document.head.appendChild(s)})}
 function previewImport(r,name){
   const neg=r.movs.filter(x=>x.m<0&&x.cat!=='Traspaso'&&x.cat!=='Balance').length;
   openSheet(`<h3>Importar ${esc(name)}</h3>
@@ -2310,7 +2312,7 @@ renderSide();
 applyAppearance();
 /* ============ nube: cuenta y sincronización (Supabase) ============ */
 const SB_URL='https://iobwejsklryixkzotpyh.supabase.co',SB_KEY='sb_publishable_1DfJ3EByCe7xYZIZEcryNg_sHEZOd-d';
-const SB_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js';
+const SB_LIB='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js?sri=1',SB_SRI='sha384-KX6Y/AMIv9qA8TLCDul2JatZWeyrJVgj3Xu/0r30Nr05xO8md1+wHAgtdsRV9LoE'; /* integrity: el navegador rechaza la librería si alguien la altera en el CDN */
 const OAUTH_GOOGLE=false; /* ponlo en true cuando Google esté configurado en Supabase */
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const stTxt=()=>({off:'Sin cuenta',ok:'Guardado en la nube',pend:'Pendiente de subir…',sync:'Sincronizando…',err:'No se pudo subir',offline:'Sin conexión: se subirá solo',conf:'Falta elegir qué datos conservar'}[cloud.state]||'');
@@ -2327,7 +2329,7 @@ function cloudDirty(j){
   if(!cloud.ask)setState('pend');cloudSched(1500);
 }
 function cloudSched(ms){clearTimeout(cloud.t);cloud.t=setTimeout(cloudPush,ms)}
-function loadSB(){if(window.supabase)return Promise.resolve();return new Promise((res,rej)=>{const s=document.createElement('script');s.src=SB_LIB;s.onload=res;s.onerror=()=>rej(new Error('lib'));document.head.appendChild(s);setTimeout(()=>rej(new Error('timeout')),8000)})}
+function loadSB(){if(window.supabase)return Promise.resolve();return new Promise((res,rej)=>{const s=document.createElement('script');s.src=SB_LIB;s.integrity=SB_SRI;s.crossOrigin='anonymous';s.onload=res;s.onerror=()=>rej(new Error('lib'));document.head.appendChild(s);setTimeout(()=>rej(new Error('timeout')),8000)})}
 function wipeLocal(){['organizado.v1','organizado.ui',PINK,'organizado.pinfail',SYNCK,'organizado.askname'].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}})}
 function fail(e){console.warn('nube',e);const off=!navigator.onLine||/fetch|network|timeout/i.test(String(e&&e.message));setState(off?'offline':'err');cloudSched(30000)}
 function applyCloud(row){
