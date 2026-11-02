@@ -531,19 +531,19 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;z-index:60;max-width:calc(100% - 32px)}
 
-/* v2.5 · Logo «Brote» y animación de inicio: la moneda ahorrada que brota. Dura ~1,4 s, no bloquea toques y no aparece con movimiento reducido. */
+/* v2.6 · Animación de inicio: la moneda ahorrada que brota. Dura ~6 s (cámara lenta a 0.25×), se salta con un toque o con Escape y no aparece con movimiento reducido. */
 .mark{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.3em;flex:none}
-.splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:18px;background:radial-gradient(120% 90% at 50% 38%,#33448F 0%,#1D285A 55%,#121A3E 100%);color:#F5F2E9;pointer-events:none;animation:spOut .35s ease-in 1.15s forwards}
+.splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:18px;background:radial-gradient(120% 90% at 50% 38%,#33448F 0%,#1D285A 55%,#121A3E 100%);color:#F5F2E9;cursor:pointer;animation:spOut 1.4s ease-in 4.6s forwards}
 .splash svg{width:132px;height:132px;overflow:visible}
-.sp-coin{transform-box:fill-box;transform-origin:50% 50%;animation:spCoin .55s cubic-bezier(.2,1.4,.4,1) both}
-.sp-stem{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0);opacity:0;animation:spStem .3s ease-out .35s forwards}
-.sp-leaf{transform-box:fill-box;transform:scale(0);animation:spLeaf .38s cubic-bezier(.3,1.5,.5,1) forwards}
-.sp-leaf.r{transform-origin:0% 100%;animation-delay:.55s}
-.sp-leaf.l{transform-origin:100% 100%;animation-delay:.62s}
-.sp-glow{transform-box:fill-box;transform-origin:50% 50%;opacity:0;animation:spGlow .7s ease-out .5s}
-.sp-word{font-family:var(--f-display);font-weight:800;font-size:28px;letter-spacing:-.01em;line-height:1;opacity:0;animation:spUp .4s ease-out .55s forwards}
+.sp-coin{transform-box:fill-box;transform-origin:50% 50%;animation:spCoin 2.2s cubic-bezier(.2,1.4,.4,1) both}
+.sp-stem{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0);opacity:0;animation:spStem 1.2s ease-out 1.4s forwards}
+.sp-leaf{transform-box:fill-box;transform:scale(0);animation:spLeaf 1.52s cubic-bezier(.3,1.5,.5,1) forwards}
+.sp-leaf.r{transform-origin:0% 100%;animation-delay:2.2s}
+.sp-leaf.l{transform-origin:100% 100%;animation-delay:2.48s}
+.sp-glow{transform-box:fill-box;transform-origin:50% 50%;opacity:0;animation:spGlow 2.8s ease-out 2s}
+.sp-word{font-family:var(--f-display);font-weight:800;font-size:28px;letter-spacing:-.01em;line-height:1;opacity:0;animation:spUp 1.6s ease-out 2.2s forwards}
 .sp-word b{color:#E9BC55}
-.sp-tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#C5CAE6;opacity:0;animation:spUp .4s ease-out .7s forwards}
+.sp-tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#C5CAE6;opacity:0;animation:spUp 1.6s ease-out 2.8s forwards}
 @keyframes spCoin{from{transform:translateY(26px) scale(.6);opacity:0}to{transform:none;opacity:1}}
 @keyframes spStem{to{transform:none;opacity:1}}
 @keyframes spLeaf{to{transform:scale(1)}}
@@ -559,9 +559,9 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
   <div class="sp-word">ORGANIZADO<b>$</b></div>
   <div class="sp-tag">Ahorra hoy, crece siempre</div>
 </div>
-<script>/* La animación sale una vez por sesión; con movimiento reducido o al recargar no se muestra. */
+<script>/* La animación sale una vez por sesión y se salta con un toque; con movimiento reducido o al recargar no se muestra. */
 (function(){var e=document.getElementById('splash'),off=false;try{off=matchMedia('(prefers-reduced-motion: reduce)').matches||sessionStorage.getItem('org-splash')==='1';sessionStorage.setItem('org-splash','1')}catch(_){}
-if(off){e.remove();return}setTimeout(function(){e.remove()},1600)})();</script>
+if(off){e.remove();return}var t=setTimeout(go,6500);function go(){clearTimeout(t);e.remove()}e.addEventListener('click',go);addEventListener('keydown',function k(ev){if(ev.key==='Escape'||ev.key==='Enter'){go();removeEventListener('keydown',k)}})})();</script>
 <aside class="side" id="side" aria-label="Menú principal"></aside>
 <div class="app">
   <header class="top" id="top"></header>
@@ -1853,7 +1853,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.5';
+const APP_VERSION='2.6';
 const MARK=`<svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="43" r="12" fill="#E9BC55"/><circle cx="32" cy="43" r="7.5" fill="none" stroke="#1D285A" stroke-opacity=".28" stroke-width="2"/><path d="M32 31V21" stroke="#3FC48A" stroke-width="3.2" stroke-linecap="round"/><path d="M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z" fill="#3FC48A"/><path d="M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z" fill="#3FC48A" fill-opacity=".75"/></svg>`;
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
@@ -1912,6 +1912,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.6',f:'2026-11-02',items:['La animación de inicio ahora es más lenta (unos 6 segundos) para que alcances a verla. Si tienes prisa, un toque en la pantalla la salta.']},
   {v:'2.5',f:'2026-11-02',items:['Nuevo logo <b>Brote</b>: una moneda ahorrada que echa hojas. Lo verás en el ícono de la app, la pestaña del navegador y el encabezado.','Al abrir la app, una animación corta muestra la moneda brotando. Dura poco más de un segundo, no bloquea los toques y no aparece si tu dispositivo tiene activado reducir movimiento.']},
   {v:'2.4',f:'2026-10-16',items:['Patrimonio muestra tu <b>nómina devengada por cobrar</b> (lo trabajado desde tu último sueldo) como línea aparte, y un interruptor para sumarla o no a tu patrimonio.']},
   {v:'2.3',f:'2026-10-14',items:['Al escribir tu contraseña puedes <b>verla con el ojito</b>, y al crear la cuenta o cambiarla la app te avisa en vivo si las dos coinciden.']},
