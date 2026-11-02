@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ORGANIZADO$">
 <meta name="description" content="Finanzas personales: registra gastos, mira tus gráficos y controla presupuesto y deudas. Tus datos se guardan en tu navegador y, si inicias sesión, también en tu cuenta.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D285A'/%3E%3Ctext x='32' y='47' font-family='Arial' font-weight='900' font-size='42' text-anchor='middle' fill='%23E9BC55'%3E$%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231D285A'/%3E%3Ccircle cx='32' cy='43' r='12' fill='%23E9BC55'/%3E%3Ccircle cx='32' cy='43' r='7.5' fill='none' stroke='%231D285A' stroke-opacity='.28' stroke-width='2'/%3E%3Cpath d='M32 31V21' stroke='%233FC48A' stroke-width='3.2' stroke-linecap='round'/%3E%3Cpath d='M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z' fill='%233FC48A'/%3E%3Cpath d='M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z' fill='%233FC48A' fill-opacity='.75'/%3E%3C/svg%3E">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -530,9 +530,38 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
 
 /* Toast */
 .toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;z-index:60;max-width:calc(100% - 32px)}
+
+/* v2.5 · Logo «Brote» y animación de inicio: la moneda ahorrada que brota. Dura ~1,4 s, no bloquea toques y no aparece con movimiento reducido. */
+.mark{display:inline-block;width:1.05em;height:1.05em;vertical-align:-.16em;margin-right:.3em;flex:none}
+.splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:18px;background:radial-gradient(120% 90% at 50% 38%,#33448F 0%,#1D285A 55%,#121A3E 100%);color:#F5F2E9;pointer-events:none;animation:spOut .35s ease-in 1.15s forwards}
+.splash svg{width:132px;height:132px;overflow:visible}
+.sp-coin{transform-box:fill-box;transform-origin:50% 50%;animation:spCoin .55s cubic-bezier(.2,1.4,.4,1) both}
+.sp-stem{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0);opacity:0;animation:spStem .3s ease-out .35s forwards}
+.sp-leaf{transform-box:fill-box;transform:scale(0);animation:spLeaf .38s cubic-bezier(.3,1.5,.5,1) forwards}
+.sp-leaf.r{transform-origin:0% 100%;animation-delay:.55s}
+.sp-leaf.l{transform-origin:100% 100%;animation-delay:.62s}
+.sp-glow{transform-box:fill-box;transform-origin:50% 50%;opacity:0;animation:spGlow .7s ease-out .5s}
+.sp-word{font-family:var(--f-display);font-weight:800;font-size:28px;letter-spacing:-.01em;line-height:1;opacity:0;animation:spUp .4s ease-out .55s forwards}
+.sp-word b{color:#E9BC55}
+.sp-tag{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#C5CAE6;opacity:0;animation:spUp .4s ease-out .7s forwards}
+@keyframes spCoin{from{transform:translateY(26px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes spStem{to{transform:none;opacity:1}}
+@keyframes spLeaf{to{transform:scale(1)}}
+@keyframes spGlow{0%{opacity:.55;transform:scale(.9)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes spUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spOut{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion: reduce){.splash{display:none}}
 </style>
 </head>
 <body>
+<div class="splash" id="splash" aria-hidden="true">
+  <svg viewBox="0 0 64 64"><circle class="sp-glow" cx="32" cy="43" r="12" fill="#E9BC55"/><g class="sp-coin"><circle cx="32" cy="43" r="12" fill="#E9BC55"/><circle cx="32" cy="43" r="7.5" fill="none" stroke="#1D285A" stroke-opacity=".28" stroke-width="2"/></g><path class="sp-stem" d="M32 31V21" stroke="#3FC48A" stroke-width="3.2" stroke-linecap="round"/><path class="sp-leaf r" d="M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z" fill="#3FC48A"/><path class="sp-leaf l" d="M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z" fill="#3FC48A" fill-opacity=".75"/></svg>
+  <div class="sp-word">ORGANIZADO<b>$</b></div>
+  <div class="sp-tag">Ahorra hoy, crece siempre</div>
+</div>
+<script>/* La animación sale una vez por sesión; con movimiento reducido o al recargar no se muestra. */
+(function(){var e=document.getElementById('splash'),off=false;try{off=matchMedia('(prefers-reduced-motion: reduce)').matches||sessionStorage.getItem('org-splash')==='1';sessionStorage.setItem('org-splash','1')}catch(_){}
+if(off){e.remove();return}setTimeout(function(){e.remove()},1600)})();</script>
 <aside class="side" id="side" aria-label="Menú principal"></aside>
 <div class="app">
   <header class="top" id="top"></header>
@@ -1752,7 +1781,7 @@ function showLock(after){
   const L=$('#lock'),pin=pinGet();if(!pin){after&&after();return}
   lockOn=true;closeSheet();document.body.style.overflow='hidden';
   const nm=(S.perfil&&S.perfil.nombre)||'';
-  L.innerHTML=`<div class="lock-in"><div class="tour-logo">ORGANIZADO<b>$</b></div><p class="lock-hi">${nm?`Hola, ${esc(nm)}`:'Hola'} <span aria-hidden="true">${EMO}</span></p><p class="muted" style="margin:0">Ingresa tu PIN</p>${padHTML()}<button class="link" id="lock-forgot" style="color:var(--muted)">Olvidé mi PIN</button></div>`;
+  L.innerHTML=`<div class="lock-in"><div class="tour-logo">${MARK}ORGANIZADO<b>$</b></div><p class="lock-hi">${nm?`Hola, ${esc(nm)}`:'Hola'} <span aria-hidden="true">${EMO}</span></p><p class="muted" style="margin:0">Ingresa tu PIN</p>${padHTML()}<button class="link" id="lock-forgot" style="color:var(--muted)">Olvidé mi PIN</button></div>`;
   L.hidden=false;
   lockPad=mountPad(L,async v=>{
     let fl={n:0,until:0};try{fl=JSON.parse(localStorage.getItem('organizado.pinfail')||'{"n":0,"until":0}')}catch(e){}
@@ -1824,7 +1853,8 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.4';
+const APP_VERSION='2.5';
+const MARK=`<svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="43" r="12" fill="#E9BC55"/><circle cx="32" cy="43" r="7.5" fill="none" stroke="#1D285A" stroke-opacity=".28" stroke-width="2"/><path d="M32 31V21" stroke="#3FC48A" stroke-width="3.2" stroke-linecap="round"/><path d="M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z" fill="#3FC48A"/><path d="M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z" fill="#3FC48A" fill-opacity=".75"/></svg>`;
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
 usoDesde();
@@ -1882,6 +1912,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.5',f:'2026-11-02',items:['Nuevo logo <b>Brote</b>: una moneda ahorrada que echa hojas. Lo verás en el ícono de la app, la pestaña del navegador y el encabezado.','Al abrir la app, una animación corta muestra la moneda brotando. Dura poco más de un segundo, no bloquea los toques y no aparece si tu dispositivo tiene activado reducir movimiento.']},
   {v:'2.4',f:'2026-10-16',items:['Patrimonio muestra tu <b>nómina devengada por cobrar</b> (lo trabajado desde tu último sueldo) como línea aparte, y un interruptor para sumarla o no a tu patrimonio.']},
   {v:'2.3',f:'2026-10-14',items:['Al escribir tu contraseña puedes <b>verla con el ojito</b>, y al crear la cuenta o cambiarla la app te avisa en vivo si las dos coinciden.']},
   {v:'2.2',f:'2026-10-14',items:['Ahora puedes <b>instalar la app</b> en tu celular o computador (Más › Instalar la app): queda con su propio ícono, se abre sin la barra del navegador y también abre sin internet.']},
@@ -2271,7 +2302,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Enter'||e.isComposing||!e.ta
 function renderSide(){
   const b=(v,ic,l,extra='')=>`<button class="snav" data-go="${v}" data-v="${v}">${ic}<span>${l}</span>${extra}</button>`;
   const T=id=>$('.tab[data-tab='+id+'] svg').outerHTML;
-  $('#side').innerHTML=`<div class="side-logo">ORGANIZADO<b>$</b></div>
+  $('#side').innerHTML=`<div class="side-logo">${MARK}ORGANIZADO<b>$</b></div>
   <button class="btn block side-add" data-act="newMov"><span>+ Registrar</span><kbd title="Atajo de teclado">N</kbd></button>
   <nav class="side-nav"><span class="side-h">Principal</span>${b('inicio',T('inicio'),'Cartera')}${b('movs',T('movs'),'Movimientos')}${b('analisis',T('analisis'),'Análisis')}
   <div class="side-tools" style="display:grid;gap:2px"><span class="side-h">Herramientas</span>${b('metas',ICON.meta,'Metas de ahorro')}${b('compras',ICON.compras,'Lista de compras')}${b('patrimonio',ICON.pat,'Patrimonio neto')}${b('nomina',ICON.nomina,'Calculadora de nómina')}${b('fijos',ICON.repetir,'Pagos fijos')}${b('presupuesto',ICON.ppto,'Presupuesto')}${b('deudas',ICON.deuda,'Deudas y préstamos','<span class="cnt" hidden></span>')}</div>
@@ -2285,7 +2316,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='n'&&e.key!=='N')return;if(e.
 function renderTop(){
   const sub=TITLES[UI.view];
   const pv=UI.view==='patrimonio'||UI.view==='nomina';
-  $('#top').innerHTML=sub?`<button class="back" data-go="mas">${ICON.back}<span>${sub}</span></button>${pv?`<button class="iconbtn" data-act="togglePriv" aria-pressed="${UI.priv}" aria-label="${UI.priv?'Mostrar cifras':'Ocultar cifras'}" title="${UI.priv?'Mostrar cifras':'Ocultar cifras'}">${UI.priv?ICON.eyeOff:ICON.eye}</button>`:''}`:`<div class="logo" aria-label="ORGANIZADO$">ORGANIZADO<b>$</b></div><span class="top-sub">${UI.view==='inicio'?'Mi cartera':UI.view==='movs'?'Movimientos':UI.view==='analisis'?'Análisis':'Más'}</span>`;
+  $('#top').innerHTML=sub?`<button class="back" data-go="mas">${ICON.back}<span>${sub}</span></button>${pv?`<button class="iconbtn" data-act="togglePriv" aria-pressed="${UI.priv}" aria-label="${UI.priv?'Mostrar cifras':'Ocultar cifras'}" title="${UI.priv?'Mostrar cifras':'Ocultar cifras'}">${UI.priv?ICON.eyeOff:ICON.eye}</button>`:''}`:`<div class="logo" aria-label="ORGANIZADO$">${MARK}ORGANIZADO<b>$</b></div><span class="top-sub">${UI.view==='inicio'?'Mi cartera':UI.view==='movs'?'Movimientos':UI.view==='analisis'?'Análisis':'Más'}</span>`;
 }
 function renderBanner(){
   let h='';
@@ -2441,7 +2472,7 @@ function authScreen(){
     if(/fetch|network/i.test(s))return'No hay conexión. Revisa tu internet e intenta de nuevo.';
     return'No se pudo completar. Intenta de nuevo.'};
   const redirect=location.origin+location.pathname;
-  const frame=inner=>{A.innerHTML=`<div class="lock-in au"><div class="tour-logo">ORGANIZADO<b>$</b></div>${inner}</div>`;pwEyes(A,A.querySelector('#au-pass2')?['au-pass','au-pass2']:null)};
+  const frame=inner=>{A.innerHTML=`<div class="lock-in au"><div class="tour-logo">${MARK}ORGANIZADO<b>$</b></div>${inner}</div>`;pwEyes(A,A.querySelector('#au-pass2')?['au-pass','au-pass2']:null)};
   const mail=()=>`<input class="inp au-mail" id="au-mail" type="email" inputmode="email" autocomplete="email" placeholder="tucorreo@ejemplo.com" value="${esc(email)}">`;
   const pass=(id,ph,ac)=>`<input class="inp au-mail" id="${id}" type="password" autocomplete="${ac}" placeholder="${ph}">`;
   const localBtn=()=>`<button class="link" id="au-local" style="color:var(--muted)">${started?'Cancelar':'Usar solo en este dispositivo'}</button>`;
