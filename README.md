@@ -4,6 +4,14 @@ App web de finanzas personales pensada para el celular: registro rápido de gast
 
 **Cuentas y nube (v2.0).** Quien inicia sesión con su correo (con contraseña, o con un enlace que llega al correo) ve sus datos desde cualquier dispositivo. Los datos se guardan en el dispositivo y en una base de datos Supabase; cada cuenta ve únicamente su propia fila (seguridad por fila). Sin sesión, la app sigue funcionando solo con el navegador. En cualquier caso conviene descargar un respaldo de vez en cuando desde *Más › Importar y respaldos*.
 
+## Dictar movimientos por voz (v2.7)
+
+El micrófono (barra superior, o **Dictar** dentro de *Nuevo movimiento*) escucha una frase en español de Colombia con la Web Speech API del navegador y la convierte en un movimiento con reglas propias (sin servicios de pago): monto (`70 mil`, `setenta mil`, `70.000`, `2 millones y medio`, `50 lucas`), cuenta, categoría, gasto/ingreso/traspaso, lujo/necesidad y fecha (hoy si no se dice; entiende `ayer`, `el lunes`, `el 5 de noviembre`). Nunca guarda sola: carga el formulario normal con una tarjeta «Entendí», lo que falta queda en rojo y lo dudoso en amarillo. El código del interpretador está entre `/*VOZ-INICIO*/` y `/*VOZ-FIN*/` en `index.html`.
+
+Chrome envía el audio a los servidores de Google para transcribirlo, así que dictar necesita internet.
+
+Pruebas (Node 18+ y `playwright` instalado): `node tests/test_voz.js` (interpretador, sin navegador) y `node tests/test_voz_ui.js` (interfaz con un reconocedor falso).
+
 ## Publicar con GitHub Pages
 
 1. Crea un repositorio público en GitHub, por ejemplo `organizado`.
