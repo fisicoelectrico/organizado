@@ -167,6 +167,17 @@ input,select,textarea{font:inherit;color:var(--ink)}
 .seg{display:flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:2px}
 .seg button{flex:1;padding:8px 6px;border-radius:9px;font-weight:700;font-size:13.5px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.vh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}.vh h3{margin:0}
+.vbtn{display:inline-flex;align-items:center;gap:6px;color:var(--brand);border-color:var(--brand)}.vbtn svg{width:15px;height:15px}
+.voz-mic{display:grid;place-items:center;gap:8px;justify-self:center;width:150px;height:150px;border-radius:50%;background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:13px;text-align:center;padding:14px}
+.voz-mic svg{width:42px;height:42px}.voz-mic.on{background:var(--brand);color:var(--on-brand);animation:vozp 1.2s ease-in-out infinite}
+@keyframes vozp{50%{box-shadow:0 0 0 14px rgba(120,140,230,.25)}}@media (prefers-reduced-motion:reduce){.voz-mic.on{animation:none}}
+textarea.inp{resize:none;font:inherit}
+.vozc{background:var(--brand-soft);border-radius:var(--r-md);padding:12px 14px;display:grid;gap:6px}
+.vozc-h{display:flex;justify-content:space-between;align-items:center}.vozc-h b{display:flex;align-items:center;gap:6px;font-size:13px}.vozc-h svg{width:16px;height:16px}
+.vozc-q{margin:0;font-style:italic;font-size:14px}.vozc-s{margin:0;font-weight:800}
+.vozc-l{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13px}.vozc-l .need{color:var(--neg);font-weight:700}.vozc-l .warnf{color:var(--warn);font-weight:700}
+.field.need,.amount.need{outline:2px solid var(--neg);outline-offset:4px;border-radius:12px}.field.warnf,.amount.warnf{outline:2px solid var(--warn);outline-offset:4px;border-radius:12px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips.scroll{flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
 .chips.scroll::-webkit-scrollbar{display:none}
@@ -1333,6 +1344,259 @@ async function offer(filename,data,errEl){
 const stamp=()=>today();
 const movsForExport=()=>[...S.movs].sort((a,b)=>a.f<b.f?-1:a.f>b.f?1:a.id-b.id);
 
+/*VOZ-INICIO*/
+/* ============ voz: interpretador de frases (reglas puras, sin red ni servicios de pago) ============
+   vozInterpretar("regístrame una compra en Bancolombia de tipo lujo en la categoría almuerzo 70 mil", {cuentas:[nombres], cats:[{nombre,tipo,realidad}], hoy:'AAAA-MM-DD'})
+   Devuelve el movimiento entendido y, campo por campo, qué hay que revisar (amarillo) o elegir (rojo). Nunca guarda nada. */
+const vozNorm=v=>String(v==null?'':v).normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toLowerCase();
+const VOZ_MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const VOZ_DIA=['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
+const VOZ_UNI={cero:0,un:1,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,once:11,doce:12,trece:13,catorce:14,quince:15,dieciseis:16,diecisiete:17,dieciocho:18,diecinueve:19,veinte:20,veintiun:21,veintiuno:21,veintiuna:21,veintidos:22,veintitres:23,veinticuatro:24,veinticinco:25,veintiseis:26,veintisiete:27,veintiocho:28,veintinueve:29,
+  treinta:30,cuarenta:40,cincuenta:50,sesenta:60,setenta:70,ochenta:80,noventa:90,
+  cien:100,ciento:100,doscientos:200,doscientas:200,trescientos:300,trescientas:300,cuatrocientos:400,cuatrocientas:400,quinientos:500,quinientas:500,seiscientos:600,seiscientas:600,setecientos:700,setecientas:700,ochocientos:800,ochocientas:800,novecientos:900,novecientas:900};
+const VOZ_MULT={mil:1000,luca:1000,lucas:1000,millon:1e6,millones:1e6,palo:1e6,palos:1e6};
+const VOZ_UNO=new Set(['un','uno','una']);
+/* Palabras que no describen nada: no cuentan al buscar categorías ni al armar el concepto */
+const VOZ_RELLENO=new Set(('registra registrame registrar registre anota anotame anotar agrega agregame agregar anade guarda guardame guardar apunta apuntame pon ponme crea creame nuevo nueva movimiento '+
+  'un una uno el la los las lo de del en por con a al mi mis me para que se es fue son y o e u pesos peso cop plata dinero tipo categoria categorias cuenta cuentas tarjeta '+
+  'lujo lujos necesidad necesario necesaria necesidades hoy ayer anteayer antier manana este esta ese esa gasto gastos gaste gastamos compra compras compre comprar pague pagar pago pagos '+
+  'ingreso ingresos recibi cobre gane traspaso traspasar transferencia transferir concepto monto valor total por favor fueron costo costaron salio salieron vale cuesta desde hacia hace dias dia semana pasado pasada pagaron pago consignaron consigno llego llegaron depositaron deposito transfirieron pasa pase pasar mover movi traslado almorce cene desayune retiro retire venta vendi nomina salario sueldo quincena reembolso devolvieron llevame lleva').split(' '));
+const VOZ_CUE_CAT=new Set(('gasto gastos gaste gastamos compra compras compre comprar pague pagar pago pagos ingreso ingresos recibi cobre gane traspaso traspasar transferencia transferir').split(' '));
+const VOZ_NOMBRE_RELLENO=new Set(['de','del','la','el','los','las','mi','y','cuenta','tarjeta']);
+/* Si dijiste esto y no existe una categoría con ese nombre, se propone la más cercana que sí tengas (siempre queda en amarillo) */
+const VOZ_SIN={almuerzo:['Comida afuera','Comida'],almorce:['Comida afuera','Comida'],cena:['Comida afuera','Comida'],cene:['Comida afuera','Comida'],desayuno:['Comida afuera','Comida'],restaurante:['Comida afuera','Comida'],corrientazo:['Comida afuera','Comida'],hamburguesa:['Comida afuera','Comida'],pizza:['Comida afuera','Comida'],
+  mercado:['Comida'],supermercado:['Comida'],super:['Comida'],verduras:['Comida'],tienda:['Comida'],rappi:['Domicilio'],domicilio:['Domicilio'],tinto:['Café'],cafe:['Café'],
+  bus:['Transporte'],taxi:['Transporte'],uber:['Transporte'],gasolina:['Transporte'],pasaje:['Transporte'],metro:['Transporte'],transmilenio:['Transporte'],peaje:['Transporte'],
+  arriendo:['Alquiler'],alquiler:['Alquiler'],luz:['Servicios'],agua:['Servicios'],internet:['Servicios'],celular:['Servicios'],telefono:['Servicios'],energia:['Servicios'],
+  drogueria:['Medicina'],farmacia:['Medicina'],medico:['Medicina'],medicamentos:['Medicina'],gym:['Gimnasio'],cine:['Entretenimiento'],netflix:['Entretenimiento'],spotify:['Entretenimiento'],
+  sueldo:['Salario','Nómina'],salario:['Salario','Nómina'],nomina:['Nómina','Salario'],quincena:['Salario','Nómina']};
+
+function vozLev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return Math.max(m,n);let p=[];for(let j=0;j<=n;j++)p[j]=j;
+  for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+const vozStem=w=>w.length>3?w.replace(/s$/,''):w;
+const vozIso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const vozSuma=(f,n)=>{const d=new Date(f+'T12:00');d.setDate(d.getDate()+n);return vozIso(d)};
+const vozFechaOk=(y,m,d)=>{const x=new Date(y,m-1,d,12);return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d};
+const vozPesos=n=>'$'+Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
+/* ---- monto: "70 mil", "setenta mil", "70.000", "1,5 millones", "dos millones y medio", "50 lucas", "70k" ---- */
+function vozNumDigitos(t,sigueMult){
+  let k=1;if(/^\d+(?:[.,]\d+)?k$/.test(t)){k=1000;t=t.slice(0,-1)}
+  let v=null;
+  if(/^\d+$/.test(t))v=Number(t);
+  else if(/^\d{1,3}(?:[.,]\d{3})+$/.test(t))v=Number(t.replace(/[.,]/g,''));
+  else if(/^\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(t))v=Number(t.replace(/\./g,'').replace(',','.'));
+  else if(/^\d+[.,]\d{1,2}$/.test(t))v=Number(t.replace(',','.'));
+  return v==null||!isFinite(v)?null:v*k;
+}
+function vozCorrida(w,i0){
+  let total=0,cur=0,i=i0,alguno=false,ultMult=0,hayMult=false,detalle=false;
+  const num=t=>/^\d[\d.,]*k?$/.test(t);
+  while(i<w.length){
+    const t=w[i],sig=w[i+1];
+    if(num(t)){
+      if(cur>0)break;
+      const v=vozNumDigitos(t,!!(sig&&VOZ_MULT[sig]));if(v==null)break;
+      cur=v;alguno=true;if(/k$/.test(t)){hayMult=true;detalle=true}i++;continue}
+    if(t==='y'){
+      const prev=w[i-1];if(!alguno||!sig)break;
+      if((sig==='medio'||sig==='media')&&ultMult){total+=ultMult/2;i+=2;continue}
+      if(!(sig in VOZ_UNI)||(VOZ_UNO.has(sig)&&!(VOZ_MULT[w[i+2]]||cur>=30)))break;
+      if(!(prev in VOZ_UNI)&&!VOZ_MULT[prev])break;
+      i++;continue}
+    if(t==='medio'||t==='media'){if(sig&&VOZ_MULT[sig]&&cur===0){cur=0.5;alguno=true;i++;continue}break}
+    if(t in VOZ_UNI){
+      if(VOZ_UNO.has(t)&&!(sig&&VOZ_MULT[sig])&&!(w[i-1]==='y'&&cur>=30))break;
+      cur+=VOZ_UNI[t];alguno=true;i++;continue}
+    if(t in VOZ_MULT){
+      const m=VOZ_MULT[t];if(!alguno&&i!==i0)break;
+      total+=(cur||1)*m;cur=0;ultMult=m;hayMult=true;alguno=true;i++;continue}
+    break;
+  }
+  return alguno?{valor:Math.round(total+cur),fin:i,mult:hayMult}:null;
+}
+function vozMonto(w,usados){
+  const cands=[];
+  for(let i=0;i<w.length;i++){
+    if(usados.has(i))continue;
+    const r=vozCorrida(w,i);if(!r||r.fin<=i){continue}
+    let ok=true;for(let j=i;j<r.fin;j++)if(usados.has(j))ok=false;if(!ok)continue;
+    const antes=w[i-1],despues=w[r.fin];
+    const moneda=antes==='$'||/^(pesos|peso|cop|mil)$/.test(despues||'');
+    const score=(r.mult?2:0)+(moneda?2:0)+(r.valor>=1000?1:0);
+    cands.push({valor:r.valor,ini:i,fin:r.fin,score,mult:r.mult});
+    i=r.fin-1;
+  }
+  const validos=cands.filter(c=>c.valor>0);
+  if(!validos.length)return null;
+  validos.sort((a,b)=>b.score-a.score||b.valor-a.valor);
+  const mejor=validos[0];
+  const otros=validos.slice(1).filter(c=>c.score>=1&&c.valor!==mejor.valor);
+  return{valor:mejor.valor,ini:mejor.ini,fin:mejor.fin,varios:otros.length>0,debil:mejor.score<1};
+}
+
+/* ---- fecha: hoy (por defecto), ayer, anteayer, hace 3 días, el lunes, el 5, el 5 de noviembre, mañana ---- */
+function vozFecha(s,hoy){
+  const out={f:hoy,dicha:false,aviso:null};let m;
+  if(m=/\b(?:el\s+)?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+(?:de(?:l)?\s+)?(\d{4}))?\b/.exec(s)){
+    const dia=+m[1],mes=m[2]==='setiembre'?9:VOZ_MES.indexOf(m[2])+1;let y=m[3]?+m[3]:+hoy.slice(0,4);
+    if(vozFechaOk(y,mes,dia)){let f=`${y}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      if(!m[3]&&f>vozSuma(hoy,31)){y--;f=`${y}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`}
+      out.f=f;out.dicha=true}else out.aviso='Esa fecha no existe; dejé hoy.';
+    return{...out,s:s.replace(m[0],' ')}}
+  if(/\b(?:antes de ayer|anteayer|antier)\b/.test(s)){out.f=vozSuma(hoy,-2);out.dicha=true;return{...out,s:s.replace(/\b(?:antes de ayer|anteayer|antier)\b/,' ')}}
+  if(/\bayer\b/.test(s)){out.f=vozSuma(hoy,-1);out.dicha=true;return{...out,s:s.replace(/\bayer\b/,' ')}}
+  if(/\bpasado manana\b/.test(s)){out.f=vozSuma(hoy,2);out.dicha=true;return{...out,s:s.replace(/\bpasado manana\b/,' ')}}
+  if(/\b(?:esta|por la|en la|de la|toda la)\s+manana\b/.test(s)){out.dicha=true;return{...out,s:s.replace(/\b(?:esta|por la|en la|de la|toda la)\s+manana\b/,' ')}}
+  if(/\bmanana\b/.test(s)){out.f=vozSuma(hoy,1);out.dicha=true;return{...out,s:s.replace(/\bmanana\b/,' ')}}
+  if(/\bhoy\b/.test(s)){out.dicha=true;return{...out,s:s.replace(/\bhoy\b/,' ')}}
+  if(m=/\bhace\s+(\d{1,3}|un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|quince)\s+dias?\b/.exec(s)){
+    const n=/^\d/.test(m[1])?+m[1]:VOZ_UNI[m[1]];out.f=vozSuma(hoy,-n);out.dicha=true;return{...out,s:s.replace(m[0],' ')}}
+  if(m=/\b(?:el\s+|este\s+)?(lunes|martes|miercoles|jueves|viernes|sabado|domingo)(\s+pasado)?\b/.exec(s)){
+    const quiere=VOZ_DIA.indexOf(m[1]),hd=new Date(hoy+'T12:00').getDay();let atras=(hd-quiere+7)%7;if(m[2]&&atras===0)atras=7;
+    out.f=vozSuma(hoy,-atras);out.dicha=true;return{...out,s:s.replace(m[0],' ')}}
+  if(m=/\bel\s+(\d{1,2})\b(?!\s*(?:mil|millon|millones|lucas|luca|palo|palos|pesos|peso|k)\b)(?![.,]\d)/.exec(s)){
+    const dia=+m[1];let y=+hoy.slice(0,4),mes=+hoy.slice(5,7);
+    if(dia>=1&&dia<=31){if(dia>+hoy.slice(8,10)){mes--;if(mes<1){mes=12;y--}}
+      if(vozFechaOk(y,mes,dia)){out.f=`${y}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;out.dicha=true;return{...out,s:s.replace(m[0],' ')}}
+      out.aviso='Esa fecha no existe; dejé hoy.'}}
+  return{...out,s};
+}
+
+/* ---- buscar cuentas y categorías entre las palabras dichas ---- */
+function vozPalabraHit(w,nombre){
+  const a=vozStem(w),b=vozStem(nombre);if(a===b)return 1;
+  const l=Math.min(a.length,b.length);if(l>=5&&vozLev(a,b)<=(Math.max(a.length,b.length)>=9?2:1))return 2;return 0}
+function vozBuscar(w,usados,nombres,opc){
+  opc=opc||{};const desde=opc.desde||0,vedadas=opc.vedadas||new Set();
+  const evals=[];
+  for(const nombre of nombres){
+    const crudos=vozNorm(nombre).split(/[^a-z0-9]+/).filter(Boolean);
+    let toks=crudos.filter(t=>!VOZ_NOMBRE_RELLENO.has(t));if(!toks.length)toks=crudos;if(!toks.length)continue;
+    let hits=[],largo=0,tot=0,difuso=false;
+    for(const t of toks){tot+=t.length;
+      for(let i=desde;i<w.length;i++){
+        if(usados.has(i)||vedadas.has(w[i])||hits.some(h=>h.idx.includes(i)))continue;
+        let h=vozPalabraHit(w[i],t),idx=[i];
+        if(!h&&w[i+1]&&!usados.has(i+1)&&/^[a-z]+$/.test(w[i])&&/^[a-z]+$/.test(w[i+1])){{const j=w[i]+w[i+1],e=vozStem(t);if(vozStem(j)===e){h=1;idx=[i,i+1]}else if(w[i].length>=4&&w[i+1].length>=4&&j.length>=9&&vozLev(vozStem(j),e)<=2){h=2;idx=[i,i+1]}}}
+        if(h){hits.push({idx,tok:t});largo+=t.length;if(h===2)difuso=true;break}}}
+    if(hits.length)evals.push({nombre,score:largo/tot,ntoks:toks.length,tot,difuso,idx:hits.flatMap(h=>h.idx)});
+  }
+  const buenos=evals.filter(e=>e.score>=0.5);if(!buenos.length)return null;
+  const completos=buenos.filter(e=>e.score>=0.999);
+  let elegido=null,amb=null;
+  if(completos.length){completos.sort((a,b)=>b.tot-a.tot);
+    if(completos.length>1&&completos[0].tot===completos[1].tot)amb=completos.filter(e=>e.tot===completos[0].tot);else elegido=completos[0]}
+  else if(buenos.length===1)elegido=buenos[0];else amb=buenos;
+  if(amb)return{ambiguo:amb.map(e=>e.nombre),idx:[...new Set(amb.flatMap(e=>e.idx))]};
+  return{nombre:elegido.nombre,difuso:elegido.difuso||elegido.score<0.999,idx:elegido.idx};
+}
+
+function vozInterpretar(texto,ctx){
+  const hoy=ctx.hoy,cuentas=ctx.cuentas||[],cats=(ctx.cats||[]).filter(c=>c.tipo!=='sistema');
+  const orig=String(texto||'');
+  const acentos={};orig.split(/\s+/).forEach(p=>{const q=p.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,'');if(q)acentos[vozNorm(q)]=q.toLowerCase()});
+  const res={texto:orig,modo:'gasto',monto:0,f:hoy,c:'',c2:'',cat:'',r:null,con:'',revisar:{},falta:{},opciones:{c:[],c2:[],cat:[]},resumen:''};
+  let s=vozNorm(orig).replace(/\$\s*/g,' $ ').replace(/[¿?¡!;:()"«»]/g,' ').replace(/\s+/g,' ');
+  s=s.replace(/(\d{1,3})((?:\s\d{3})+)(?!\d)/g,(m,a,b)=>a+b.replace(/\s/g,''));
+  /* 1. fecha */
+  const fe=vozFecha(s,hoy);s=fe.s;res.f=fe.f;
+  if(fe.aviso)res.revisar.f=fe.aviso;
+  else if(fe.dicha&&fe.f>hoy)res.revisar.f='Es una fecha futura ('+fe.f+'). ¿Es correcto?';
+  /* 2. palabras */
+  const w=s.split(' ').map(t=>t.replace(/^[.,]+|[.,]+$/g,'')).filter(Boolean);
+  const usados=new Set();
+  const txt=w.join(' ');
+  /* 3. monto */
+  const mo=vozMonto(w,usados);
+  if(mo){res.monto=mo.valor;for(let i=mo.ini;i<mo.fin;i++)usados.add(i);
+    w.forEach((t,i)=>{if(t==='$'||(i===mo.fin&&/^(pesos|peso|cop)$/.test(t)))usados.add(i)});
+    if(mo.varios)res.revisar.monto='Oí más de un número; tomé '+vozPesos(mo.valor)+'. Confírmalo.';
+    else if(mo.debil&&mo.valor<1000)res.revisar.monto='Oí '+vozPesos(mo.valor)+'. ¿Seguro que no faltan ceros?';
+    else if(mo.valor>=10000000)res.revisar.monto='Es un monto muy alto ('+vozPesos(mo.valor)+'). ¿Es correcto?';
+  }else res.falta.monto='No entendí el monto. Escríbelo.';
+  /* 4. clasificación lujo / necesidad */
+  const lujo=/\b(lujo|lujos|antojo)\b/.test(txt),nec=/\b(necesidad|necesidades|necesario|necesaria|basico|esencial)\b/.test(txt);
+  if(lujo&&!nec)res.r='LUJO';else if(nec&&!lujo)res.r='NECESIDAD';
+  else if(lujo&&nec)res.revisar.r='Dijiste lujo y necesidad; elige una.';
+  /* 5. cuentas */
+  let accHit=[];
+  {const usadosCta=new Set(usados);const cand=cuentas.slice();
+    for(let k=0;k<2&&cand.length;k++){
+      const b=vozBuscar(w,usadosCta,cand);if(!b)break;
+      accHit.push(b);b.idx.forEach(i=>usadosCta.add(i));
+      if(b.ambiguo)break;
+      cand.splice(cand.indexOf(b.nombre),1);
+    }}
+  accHit=accHit.filter(Boolean);
+  accHit.forEach(h=>h.idx.forEach(i=>usados.add(i)));
+  /* 6. tipo de movimiento */
+  const reTras=/\b(traspaso|traspasar|traspase|transferencia|transferir|transfiero|transferi|trasladar|traslado|traslade|mover|movi|pase|pasar|pasa)\b/;
+  const reIng=/\b(ingreso|ingresos|me pagaron|me pago|me llego|me llegaron|me consignaron|me consigno|me depositaron|me deposito|me transfirieron|recibi|recibimos|cobre|cobro|gane|salario|sueldo|nomina|quincena|venta|vendi|reembolso|me devolvieron)\b/;
+  const reGas=/\b(gasto|gastos|gaste|gastamos|compra|compras|compre|compramos|comprar|pague|pagamos|pagar|pago|pagos|almorce|cene|desayune|retiro|retire|salida)\b/;
+  const iT=txt.search(reTras),iI=txt.search(reIng),iG=txt.search(reGas);
+  const dosCta=accHit.length===2&&!accHit.some(h=>h.ambiguo);
+  if(iT>=0&&(dosCta||accHit.length>=1)){res.modo='traspaso'}
+  else if(iI>=0&&(iG<0||iI<iG||/me pag/.test(txt))){res.modo='ingreso';if(iG>=0&&!/me pag/.test(txt))res.revisar.modo='Oí palabras de ingreso y de gasto. Confirma el tipo.'}
+  else if(iG>=0){res.modo='gasto';if(iI>=0)res.revisar.modo='Oí palabras de ingreso y de gasto. Confirma el tipo.'}
+  else if(dosCta&&/\bde(?:sde)?\b.*\b(?:a|hacia|para)\b/.test(txt)){res.modo='traspaso';res.revisar.modo='Entendí un traspaso entre dos cuentas. ¿Es correcto?'}
+  else res.modo='gasto',res.revisar.modo='No dijiste si es gasto o ingreso; puse gasto.';
+  /* 7. asignar cuentas según el tipo */
+  const nombres=accHit.filter(h=>!h.ambiguo);
+  if(res.modo==='traspaso'){
+    const rol=h=>{const i=Math.min(...h.idx);const p1=w[i-1],p2=w[i-2];
+      if(['a','hacia','para'].includes(p1)||['a','hacia','para'].includes(p2))return'dest';
+      if(['de','desde'].includes(p1)||['de','desde'].includes(p2))return'orig';return''};
+    let o=null,d=null;
+    if(nombres.length===2){const r0=rol(nombres[0]),r1=rol(nombres[1]);
+      if(r0==='dest'||r1==='orig'){d=nombres[0];o=nombres[1]}else{o=nombres[0];d=nombres[1]}
+      if(!r0&&!r1)res.revisar.c='Puse «'+o.nombre+'» como origen y «'+d.nombre+'» como destino. Verifícalo.'}
+    else if(nombres.length===1){const r0=rol(nombres[0]);if(r0==='dest')d=nombres[0];else o=nombres[0]}
+    if(o){res.c=o.nombre;if(o.difuso)res.revisar.c='Entendí «'+o.nombre+'»; confírmalo.'}else res.falta.c='No entendí la cuenta de la que sale. Elige una.';
+    if(d){res.c2=d.nombre;if(d.difuso)res.revisar.c2='Entendí «'+d.nombre+'»; confírmalo.'}else res.falta.c2='No entendí la cuenta a la que entra. Elige una.';
+    if(res.c&&res.c===res.c2){res.c2='';res.falta.c2='Origen y destino no pueden ser la misma cuenta.'}
+    const amb=accHit.find(h=>h.ambiguo);if(amb){(res.falta.c?res.opciones.c:res.opciones.c2).push(...amb.ambiguo)}
+  }else{
+    if(nombres.length===1&&!accHit.some(h=>h.ambiguo)){const h=nombres[0];res.c=h.nombre;if(h.difuso)res.revisar.c='Entendí «'+h.nombre+'»; confírmalo.'}
+    else if(accHit.length){const todos=[...new Set(accHit.flatMap(h=>h.ambiguo||[h.nombre]))];res.opciones.c=todos;res.falta.c='Hay varias cuentas posibles ('+todos.join(', ')+'). Elige una.'}
+    else res.falta.c=cuentas.length?'No reconocí la cuenta. Elige una.':'Primero crea una cuenta.';
+  }
+  /* 8. categoría (no aplica en traspasos) */
+  if(res.modo!=='traspaso'){
+    const sirve=c=>res.modo==='ingreso'?c.tipo!=='gasto':c.tipo!=='ingreso';
+    const disp=cats.filter(sirve),nom=disp.map(c=>c.nombre);
+    let desde=0,hayPalabra=false;
+    const ic=w.findIndex(t=>t==='categoria'||t==='categorias');
+    if(ic>=0){hayPalabra=true;desde=ic+1;usados.add(ic)}
+    const vedadas=hayPalabra?new Set():VOZ_CUE_CAT;
+    let b=vozBuscar(w,usados,nom,{desde,vedadas});
+    if(!b&&hayPalabra)b=vozBuscar(w,usados,nom,{vedadas});
+    if(b&&b.ambiguo){res.opciones.cat=b.ambiguo;res.falta.cat='Hay varias categorías parecidas ('+b.ambiguo.join(', ')+'). Elige una.';b.idx.forEach(i=>usados.add(i))}
+    else if(b){res.cat=b.nombre;b.idx.forEach(i=>usados.add(i));if(b.difuso)res.revisar.cat='Entendí «'+b.nombre+'»; confírmala.'}
+    else{
+      /* sinónimos: solo si existe la categoría de destino, y siempre en amarillo */
+      for(let i=0;i<w.length&&!res.cat;i++){if(usados.has(i))continue;const sin=VOZ_SIN[w[i]];if(!sin)continue;
+        const hit=sin.map(n=>nom.find(x=>vozNorm(x)===vozNorm(n))).find(Boolean);
+        if(hit){res.cat=hit;usados.add(i);res.revisar.cat='Dijiste «'+(acentos[w[i]]||w[i])+'» y lo puse en «'+hit+'». ¿Es correcto?'}}
+      if(!res.cat)res.falta.cat=nom.length?'No encontré esa categoría. Elige una.':'No tienes categorías de este tipo.';
+    }
+    if(res.cat&&res.modo==='gasto'&&!res.r){const c=disp.find(x=>x.nombre===res.cat);if(c&&c.realidad)res.r=c.realidad}
+  }
+  if(res.modo!=='gasto')res.r=null;
+  /* 9. concepto: lo que sobra y sí describe algo (solo si no hay categoría clara) */
+  const crudos=[];w.forEach((t,i)=>{if(!usados.has(i)&&!VOZ_RELLENO.has(t)&&!/^[\d$.,]+k?$/.test(t)&&!(t in VOZ_UNI)&&!(t in VOZ_MULT)&&t.length>1)crudos.push(acentos[t]||t)});
+  if(crudos.length&&crudos.length<=4){const c=crudos.join(' ');res.con=c.charAt(0).toUpperCase()+c.slice(1)}
+  /* resumen para la tarjeta */
+  const tipoTxt={gasto:'Gasto',ingreso:'Ingreso',traspaso:'Traspaso'}[res.modo];
+  const partes=[tipoTxt+(res.monto?' de '+vozPesos(res.monto):'')];
+  if(res.modo==='traspaso')partes.push((res.c||'?')+' → '+(res.c2||'?'));else{partes.push('en '+(res.c||'¿cuenta?'));partes.push(res.cat||'¿categoría?')}
+  if(res.r)partes.push(res.r==='LUJO'?'lujo':'necesidad');
+  partes.push(res.f===hoy?'hoy':res.f);
+  res.resumen=partes.join(' · ');
+  return res;
+}
+/*VOZ-FIN*/
+
 /* ============ formulario de movimiento ============ */
 let F=null;
 function catsFor(mode){
@@ -1352,15 +1616,16 @@ function renderMovForm(){
   const b=$('#sheet-body'),ed=!!F.id,m=F.mode;
   const cats=catsFor(m),shown=F.all?cats:cats.slice(0,12);
   if(F.cat&&!shown.find(c=>c.nombre===F.cat)){const c=catOf(F.cat);if(c)shown.unshift(c)}
-  const acc=(key,label)=>`<div class="field"><span>${label}</span><div class="chips">${S.cuentas.map(c=>`<button class="chip" data-fc="${key}" data-v="${esc(c.nombre)}" aria-pressed="${F[key]===c.nombre}">${esc(c.nombre)}</button>`).join('')}</div>${key==='c'&&m!=='ingreso'?movDispHint(F.c):''}</div>`;
+  const acc=(key,label)=>`<div class="field${vozCls(key)}"><span>${label}</span><div class="chips">${S.cuentas.map(c=>`<button class="chip" data-fc="${key}" data-v="${esc(c.nombre)}" aria-pressed="${F[key]===c.nombre}">${esc(c.nombre)}</button>`).join('')}</div>${key==='c'&&m!=='ingreso'?movDispHint(F.c):''}</div>`;
   const qa=(!ed&&m!=='traspaso')?(S.atajos.length?S.atajos:atajosSugeridos(8)).filter(a=>m==='gasto'?a.m<0:a.m>0):[];
-  b.innerHTML=`<h3>${ed?'Editar movimiento':F.fijoId?'Confirmar pago fijo':'Nuevo movimiento'}</h3>
+  b.innerHTML=`<div class="vh"><h3>${ed?'Editar movimiento':F.fijoId?'Confirmar pago fijo':'Nuevo movimiento'}</h3>${!ed&&!F.fijoId?`<button class="chip vbtn" type="button" data-act="voz">${VOZ_MIC} Dictar</button>`:''}</div>
   <div class="form">
+    ${vozCard()}
     ${qa.length&&!F.fijoId?`<div class="field"><span>Atajos</span><div class="qrow">${qa.map((a,i)=>`<button class="qchip${S.atajos.length?'':' sug'}" data-fq="${i}"><span class="ico" style="--h:${hue(a.cat)}">${esc(initials(a.cat))}</span><span class="qt"><b>${esc(atLabel(a))}</b><small class="num">${fmt(Math.abs(a.m))}</small></span></button>`).join('')}</div></div>`:''}
     ${F.sys&&m!=='traspaso'?`<p class="small muted" style="margin:0">Movimiento interno (${esc(F.cat)}).</p>`:`<div class="seg" role="group" aria-label="Tipo">${[['gasto','Gasto'],['ingreso','Ingreso'],['traspaso','Traspaso']].map(([v,l])=>`<button data-fm="${v}" aria-pressed="${m===v}" ${ed&&(m==='traspaso')!==(v==='traspaso')?'disabled':''}>${l}</button>`).join('')}</div>`}
-    <div class="amount ${m==='gasto'?'neg':m==='ingreso'?'pos':''}"><span>$</span><input id="f-monto" inputmode="decimal" autocomplete="off" placeholder="0" value="${F.monto?fmtTyping(String(F.monto).replace('.',',')):''}" aria-label="Monto"></div>
+    <div class="amount ${m==='gasto'?'neg':m==='ingreso'?'pos':''}${vozCls('monto')}"><span>$</span><input id="f-monto" inputmode="decimal" autocomplete="off" placeholder="0" value="${F.monto?fmtTyping(String(F.monto).replace('.',',')):''}" aria-label="Monto"></div>
     ${m==='traspaso'?acc('c','Sale de')+acc('c2','Entra a'):`
-    ${F.sys?'':`<div class="field"><span>Categoría</span><div class="chips">${shown.map(c=>`<button class="chip" data-fcat="${esc(c.nombre)}" aria-pressed="${F.cat===c.nombre}">${esc(c.nombre)}</button>`).join('')}${!F.all&&cats.length>12?`<button class="chip" data-fall="1">Ver todas (${cats.length})</button>`:''}${F.newCat?'':'<button class="chip chip-new" data-fnew="1">+ Nueva</button>'}</div>
+    ${F.sys?'':`<div class="field${vozCls('cat')}"><span>Categoría</span><div class="chips">${shown.map(c=>`<button class="chip" data-fcat="${esc(c.nombre)}" aria-pressed="${F.cat===c.nombre}">${esc(c.nombre)}</button>`).join('')}${!F.all&&cats.length>12?`<button class="chip" data-fall="1">Ver todas (${cats.length})</button>`:''}${F.newCat?'':'<button class="chip chip-new" data-fnew="1">+ Nueva</button>'}</div>
       ${F.newCat?`<div class="newcat"><b class="small">Nueva categoría de ${m==='ingreso'?'ingreso':'gasto'}</b>
         <input class="inp" id="f-nc" maxlength="30" placeholder="${m==='ingreso'?'Ej. Freelance, Arriendo recibido':'Ej. Mascota, Regalos, Peluquería'}" value="${esc(F.ncName||'')}" autocomplete="off">
         ${m==='gasto'?`<div class="seg" role="group" aria-label="Clasificación por defecto">${[['','Sin clasificar'],['NECESIDAD','Necesidad'],['LUJO','Lujo']].map(([v,l])=>`<button data-ncr="${v}" aria-pressed="${(F.ncR||'')===v}">${l}</button>`).join('')}</div>`:''}
@@ -1368,7 +1633,7 @@ function renderMovForm(){
         <div class="row2"><button class="btn sm" id="f-nc-ok">Crear y usar</button><button class="btn sm ghost" id="f-nc-x">Cancelar</button></div></div>`:''}</div>`}
     ${acc('c','Cuenta')}`}
     <label class="field"><span>Concepto</span><input class="inp" id="f-con" list="f-sug" placeholder="${m==='traspaso'?'Ej. Banco a efectivo':'Ej. Almuerzo'}" value="${esc(F.con)}" autocomplete="off"><datalist id="f-sug">${conSuggest().map(s=>`<option value="${esc(s)}">`).join('')}</datalist></label>
-    <div class="row2"><label class="field"><span>Fecha</span><input class="inp" type="date" id="f-f" value="${F.f}" max="${addDays(today(),366)}"></label>
+    <div class="row2"><label class="field${vozCls('f')}"><span>Fecha</span><input class="inp" type="date" id="f-f" value="${F.f}" max="${addDays(today(),366)}"></label>
     ${m==='gasto'&&!F.sys?`<div class="field"><span>Clasificación</span><div class="seg">${[['NECESIDAD','Necesidad'],['LUJO','Lujo']].map(([v,l])=>`<button data-fr="${v}" aria-pressed="${F.r===v}">${l}</button>`).join('')}</div></div>`:'<div></div>'}</div>
     ${m!=='traspaso'&&!F.sys&&!F.fijoId?`<label class="prow-top" style="align-items:center;cursor:pointer"><span class="small">Guardar también como atajo</span><input type="checkbox" id="f-at" ${F.saveAt?'checked':''} style="width:20px;height:20px"></label>`:''}
     <p class="err" id="f-err"></p>
@@ -1376,11 +1641,11 @@ function renderMovForm(){
     ${ed?`<button class="btn block ghost" id="f-del" style="color:var(--neg)">Eliminar</button>`:''}
   </div>`;
   const mi=$('#f-monto');const fit=()=>mi.style.width=Math.max(2,mi.value.length*0.82+0.6)+'ch';fit();
-  mi.oninput=()=>{const p=mi.value.length-mi.selectionStart;mi.value=fmtTyping(mi.value);F.monto=parseAmt(mi.value);fit();const np=Math.max(0,mi.value.length-p);try{mi.setSelectionRange(np,np)}catch(e){}};
+  mi.oninput=()=>{vozOk('monto');const p=mi.value.length-mi.selectionStart;mi.value=fmtTyping(mi.value);F.monto=parseAmt(mi.value);fit();const np=Math.max(0,mi.value.length-p);try{mi.setSelectionRange(np,np)}catch(e){}};
   if(!ed&&!F.monto)setTimeout(()=>mi.focus(),250);
-  $('#f-con').oninput=e=>F.con=e.target.value;$('#f-f').onchange=e=>F.f=e.target.value||today();
-  $$('[data-fm]',b).forEach(el=>el.onclick=()=>{F.mode=el.dataset.fm;F.cat='';F.r=null;F.newCat=false;renderMovForm()});
-  $$('[data-fcat]',b).forEach(el=>el.onclick=()=>{F.cat=el.dataset.fcat;const c=catOf(F.cat);if(F.mode==='gasto')F.r=c&&c.realidad||null;renderMovForm()});
+  $('#f-con').oninput=e=>F.con=e.target.value;$('#f-f').onchange=e=>{F.f=e.target.value||today();vozOk('f')};
+  $$('[data-fm]',b).forEach(el=>el.onclick=()=>{vozOk('modo');F.mode=el.dataset.fm;F.cat='';F.r=null;F.newCat=false;renderMovForm()});
+  $$('[data-fcat]',b).forEach(el=>el.onclick=()=>{vozOk('cat');F.cat=el.dataset.fcat;const c=catOf(F.cat);if(F.mode==='gasto')F.r=c&&c.realidad||null;renderMovForm()});
   $$('[data-fall]',b).forEach(el=>el.onclick=()=>{F.all=true;renderMovForm()});
   $$('[data-fnew]',b).forEach(el=>el.onclick=()=>{F.newCat=true;F.ncName='';F.ncR='';renderMovForm();setTimeout(()=>{const i=$('#f-nc');if(i){i.focus();i.scrollIntoView({block:'center',behavior:'smooth'})}},60)});
   const nc=$('#f-nc');if(nc){
@@ -1397,8 +1662,8 @@ function renderMovForm(){
     $('#f-nc-ok').onclick=crear;nc.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();crear()}};
     $('#f-nc-x').onclick=()=>{F.newCat=false;renderMovForm()};
   }
-  $$('[data-fc]',b).forEach(el=>el.onclick=()=>{F[el.dataset.fc]=el.dataset.v;renderMovForm()});
-  $$('[data-fr]',b).forEach(el=>el.onclick=()=>{F.r=F.r===el.dataset.fr?null:el.dataset.fr;renderMovForm()});
+  $$('[data-fc]',b).forEach(el=>el.onclick=()=>{F[el.dataset.fc]=el.dataset.v;vozOk(el.dataset.fc);renderMovForm()});
+  $$('[data-fr]',b).forEach(el=>el.onclick=()=>{F.r=F.r===el.dataset.fr?null:el.dataset.fr;vozOk('r');renderMovForm()});
   $('#f-save').onclick=saveMov;
   const fat=$('#f-at');if(fat)fat.onchange=()=>F.saveAt=fat.checked;
   $$('[data-fq]',b).forEach(el=>el.onclick=()=>{const a=qa[+el.dataset.fq];Object.assign(F,{monto:Math.abs(a.m),cat:a.cat,c:a.c,con:a.con||'',r:a.m<0?a.r||null:null});renderMovForm()});
@@ -1411,12 +1676,14 @@ function saveMov(){
   if(!F.c){err.textContent='Elige una cuenta.';return}
   if(F.mode==='traspaso'){
     if(!F.c2||F.c2===F.c){err.textContent='Elige dos cuentas distintas.';return}
+    if(vozPendiente(err))return;
     const con=F.con.trim()||`${F.c} a ${F.c2}`;
     if(F.t)S.movs=S.movs.filter(y=>y.t!==F.t);else if(F.id)S.movs=S.movs.filter(y=>y.id!==F.id);
     const t='t'+Date.now().toString(36);
     S.movs.push({id:nextId(),f:F.f,m:-amt,c:F.c,cat:'Traspaso',con,r:null,t},{id:nextId(),f:F.f,m:amt,c:F.c2,cat:'Traspaso',con,r:null,t});
   }else{
     if(!F.cat){err.textContent='Elige una categoría.';return}
+    if(vozPendiente(err))return;
     const m=F.mode==='gasto'?-amt:amt;
     if(F.id){const x=S.movs.find(y=>y.id===F.id);Object.assign(x,{f:F.f,m,c:F.c,cat:F.cat,con:F.con.trim(),r:F.mode==='gasto'?F.r:null})}
     else{const nx={id:nextId(),f:F.f,m,c:F.c,cat:F.cat,con:F.con.trim(),r:F.mode==='gasto'?F.r:null};if(F.fijoId){nx.fijo=F.fijoId;const fj=S.fijos.find(z=>z.id===F.fijoId);if(fj)fj.ult=F.fijoK}S.movs.push(nx)}
@@ -1424,6 +1691,65 @@ function saveMov(){
   }
   save();closeSheet();toast(F.id?'Cambios guardados':F.mode==='gasto'?'Gasto guardado':F.mode==='ingreso'?'Ingreso guardado':'Traspaso guardado');render();
 }
+
+/* ============ voz: dictar un movimiento ============
+   Flujo: micrófono (Web Speech, es-CO) → frase → vozInterpretar → formulario normal precargado con la tarjeta «Entendí».
+   Nada se guarda sin que toques Guardar; lo que falta queda en rojo y lo dudoso en amarillo. */
+const VOZ_SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let VZ={rec:null,txt:'',fin:'',on:false};
+const VOZ_MIC='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+function vozErr(code){
+  return{'not-allowed':'El micrófono está bloqueado. En Chrome toca el candado o ⓘ junto a la dirección › Permisos › Micrófono › Permitir. Con la app instalada: Ajustes de Android › Apps › ORGANIZADO$ › Permisos › Micrófono.',
+    'service-not-allowed':'Este dispositivo no deja usar el dictado. Revisa que Chrome tenga permiso de micrófono y el dictado por voz de Google activo.',
+    'audio-capture':'No encuentro un micrófono disponible.','network':'Dictar necesita internet: Chrome manda el audio a Google para convertirlo en texto.',
+    'no-speech':'No te escuché. Toca el micrófono y habla cerca del teléfono.','language-not-supported':'Este dispositivo no tiene dictado en español de Colombia.'}[code]||'No pude dictar ('+code+'). Puedes escribir la frase.'}
+function vozStop(abort){const r=VZ.rec;VZ.rec=null;VZ.on=false;if(r){r.onresult=r.onend=r.onerror=null;try{abort?r.abort():r.stop()}catch(e){}}}
+function vozSheet(pre){
+  vozStop(true);VZ.txt=pre||'';VZ.fin='';
+  openSheet(`<h3>Dictar movimiento</h3><div class="form voz">
+    <p class="small muted" style="margin:0">Di todo en una frase. Ejemplo: <i>«regístrame un gasto en Bancolombia de tipo lujo en la categoría almuerzo 70 mil»</i>. Si no dices la fecha, uso hoy.</p>
+    ${VOZ_SR?`<button class="voz-mic" id="voz-mic" type="button" aria-label="Dictar">${VOZ_MIC}<span id="voz-st">Toca para hablar</span></button>`:'<p class="small muted" style="margin:0">Este navegador no dicta. Escribe la frase aquí abajo.</p>'}
+    <label class="field"><span>Lo que entendí (puedes corregirlo)</span><textarea class="inp" id="voz-txt" rows="2" maxlength="300" placeholder="Ej. gasté 25 mil en efectivo en transporte ayer" autocomplete="off">${esc(VZ.txt)}</textarea></label>
+    <p class="err" id="voz-err"></p>
+    <button class="btn block" id="voz-go" type="button">Interpretar</button>
+    <button class="btn block ghost" id="voz-manual" type="button">Mejor lo escribo yo</button></div>`,()=>{
+    const t=$('#voz-txt'),st=$('#voz-st'),mic=$('#voz-mic');
+    t.oninput=()=>VZ.txt=t.value;
+    const go=()=>{vozStop(true);const v=t.value.trim();if(!v){$('#voz-err').textContent='Di o escribe una frase primero.';return}vozApply(v)};
+    $('#voz-go').onclick=go;
+    $('#voz-manual').onclick=()=>{vozStop(true);openMovForm(null)};
+    if(!VOZ_SR)return;
+    const parar=()=>{vozStop(false);mic.classList.remove('on');st.textContent='Toca para hablar'};
+    const hablar=()=>{
+      $('#voz-err').textContent='';VZ.fin='';
+      let r;try{r=new VOZ_SR()}catch(e){$('#voz-err').textContent=vozErr('service-not-allowed');return}
+      r.lang='es-CO';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;VZ.rec=r;VZ.on=true;
+      r.onresult=e=>{let fin='',tmp='';for(let i=0;i<e.results.length;i++){const a=e.results[i][0].transcript;if(e.results[i].isFinal)fin+=a;else tmp+=a}
+        VZ.fin=fin;VZ.txt=(fin+' '+tmp).trim();t.value=VZ.txt};
+      r.onerror=e=>{VZ.on=false;mic.classList.remove('on');st.textContent='Toca para hablar';if(e.error!=='aborted')$('#voz-err').textContent=vozErr(e.error)};
+      r.onend=()=>{const quedo=VZ.on;VZ.rec=null;VZ.on=false;mic.classList.remove('on');st.textContent='Toca para hablar';
+        if(quedo&&t.value.trim())go();else if(quedo&&!$('#voz-err').textContent)$('#voz-err').textContent=vozErr('no-speech')};
+      try{r.start();mic.classList.add('on');st.textContent='Te escucho… toca para terminar'}catch(e){$('#voz-err').textContent=vozErr('service-not-allowed')}};
+    mic.onclick=()=>VZ.on?parar():hablar();
+    if(!pre)hablar();
+  });
+}
+function vozApply(frase){
+  const r=vozInterpretar(frase,{cuentas:S.cuentas.map(c=>c.nombre),cats:S.cats,hoy:today()});
+  openMovForm(null);
+  Object.assign(F,{mode:r.modo,monto:r.monto||'',cat:r.cat,c:r.c,c2:r.c2,f:r.f,con:r.con,r:r.r,voz:{txt:frase,rev:{...r.revisar},falta:{...r.falta},resumen:r.resumen,ok:false}});
+  renderMovForm();
+}
+function vozPendiente(err){if(F.voz&&!F.voz.ok&&Object.keys(F.voz.rev).length){F.voz.ok=true;err.textContent='Revisa lo que está en amarillo y toca Guardar otra vez.';return true}return false}
+function vozOk(k){if(F&&F.voz){delete F.voz.falta[k];delete F.voz.rev[k]}}
+function vozCard(){
+  const v=F.voz;if(!v)return'';
+  const fl=Object.entries(v.falta).map(([k,m])=>`<li class="need">${esc(m)}</li>`).join(''),rv=Object.entries(v.rev).map(([k,m])=>`<li class="warnf">${esc(m)}</li>`).join('');
+  return`<div class="vozc"><div class="vozc-h"><b>${VOZ_MIC} Entendí</b><button class="link" type="button" data-act="vozAgain">Corregir frase</button></div>
+    <p class="vozc-q">«${esc(v.txt)}»</p><p class="vozc-s">${esc(v.resumen)}</p>
+    ${fl||rv?`<ul class="vozc-l">${fl}${rv}</ul>`:'<p class="small muted" style="margin:0">Revisa los datos y toca Guardar.</p>'}</div>`;
+}
+const vozCls=k=>F.voz?(F.voz.falta[k]?' need':F.voz.rev[k]?' warnf':''):'';
 
 /* ============ hojas: presupuesto, deudas, cuentas, categorías ============ */
 function pptoForm(cat){
@@ -1546,13 +1872,15 @@ function catForm(name){
 
 /* ============ sheet / toast / confirm ============ */
 function openSheet(html,mount){$('#sheet-body').innerHTML=html;$('#sheet').hidden=false;document.body.style.overflow='hidden';if(mount)mount()}
-function closeSheet(){$('#sheet').hidden=true;$('#sheet-body').innerHTML='';document.body.style.overflow=''}
+function closeSheet(){vozStop(true);$('#sheet').hidden=true;$('#sheet-body').innerHTML='';document.body.style.overflow=''}
 function confirmSheet(title,text,ok,fn,danger){openSheet(`<h3>${esc(title)}</h3><p style="margin:0 0 16px">${text}</p><div class="stack"><button class="btn block ${danger?'danger':''}" id="cf-ok">${esc(ok)}</button><button class="btn block ghost" data-act="closeSheet">Cancelar</button></div>`,()=>{$('#cf-ok').onclick=()=>{closeSheet();fn()}})}
 let tt;function toast(m,undo){const t=$('#toast');t.textContent=m;if(undo){const b=document.createElement('button');b.className='toast-undo';b.textContent='Deshacer';b.onclick=()=>{t.hidden=true;undo()};t.appendChild(b)}t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,undo?5000:2200)}
 
 /* ============ acciones ============ */
 const ACT={
   newMov:()=>openMovForm(null),
+  voz:()=>vozSheet(''),
+  vozAgain:()=>vozSheet(F&&F.voz?F.voz.txt:''),
   editMov:el=>{const x=S.movs.find(y=>y.id===Number(el.dataset.id));if(x)openMovForm(x)},
   closeSheet,
   acctMovs:el=>go('movs',{fc:el.dataset.c,fcat:'',ft:'todos',q:''}),
@@ -1853,7 +2181,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.6';
+const APP_VERSION='2.7';
 const MARK=`<svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="43" r="12" fill="#E9BC55"/><circle cx="32" cy="43" r="7.5" fill="none" stroke="#1D285A" stroke-opacity=".28" stroke-width="2"/><path d="M32 31V21" stroke="#3FC48A" stroke-width="3.2" stroke-linecap="round"/><path d="M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z" fill="#3FC48A"/><path d="M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z" fill="#3FC48A" fill-opacity=".75"/></svg>`;
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
@@ -1912,6 +2240,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.7',f:'2026-11-07',items:['Nuevo: <b>dicta tus movimientos</b>. Toca el micrófono (arriba, o «Dictar» al registrar) y di, por ejemplo: «gasté 70 mil en Bancolombia en la categoría almuerzo, de tipo lujo». La app entiende monto, cuenta, categoría, tipo y fecha (hoy si no la dices).','Nunca guarda sola: te muestra lo que entendió en una tarjeta editable, marca en rojo lo que falta y en amarillo lo que dudó, y tú tocas Guardar.']},
   {v:'2.6',f:'2026-11-02',items:['La animación de inicio ahora es más lenta (unos 6 segundos) para que alcances a verla. Si tienes prisa, un toque en la pantalla la salta.']},
   {v:'2.5',f:'2026-11-02',items:['Nuevo logo <b>Brote</b>: una moneda ahorrada que echa hojas. Lo verás en el ícono de la app, la pestaña del navegador y el encabezado.','Al abrir la app, una animación corta muestra la moneda brotando. Dura poco más de un segundo, no bloquea los toques y no aparece si tu dispositivo tiene activado reducir movimiento.']},
   {v:'2.4',f:'2026-10-16',items:['Patrimonio muestra tu <b>nómina devengada por cobrar</b> (lo trabajado desde tu último sueldo) como línea aparte, y un interruptor para sumarla o no a tu patrimonio.']},
@@ -2317,7 +2646,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='n'&&e.key!=='N')return;if(e.
 function renderTop(){
   const sub=TITLES[UI.view];
   const pv=UI.view==='patrimonio'||UI.view==='nomina';
-  $('#top').innerHTML=sub?`<button class="back" data-go="mas">${ICON.back}<span>${sub}</span></button>${pv?`<button class="iconbtn" data-act="togglePriv" aria-pressed="${UI.priv}" aria-label="${UI.priv?'Mostrar cifras':'Ocultar cifras'}" title="${UI.priv?'Mostrar cifras':'Ocultar cifras'}">${UI.priv?ICON.eyeOff:ICON.eye}</button>`:''}`:`<div class="logo" aria-label="ORGANIZADO$">${MARK}ORGANIZADO<b>$</b></div><span class="top-sub">${UI.view==='inicio'?'Mi cartera':UI.view==='movs'?'Movimientos':UI.view==='analisis'?'Análisis':'Más'}</span>`;
+  $('#top').innerHTML=sub?`<button class="back" data-go="mas">${ICON.back}<span>${sub}</span></button>${pv?`<button class="iconbtn" data-act="togglePriv" aria-pressed="${UI.priv}" aria-label="${UI.priv?'Mostrar cifras':'Ocultar cifras'}" title="${UI.priv?'Mostrar cifras':'Ocultar cifras'}">${UI.priv?ICON.eyeOff:ICON.eye}</button>`:''}`:`<div class="logo" aria-label="ORGANIZADO$">${MARK}ORGANIZADO<b>$</b></div><div class="right"><span class="top-sub">${UI.view==='inicio'?'Mi cartera':UI.view==='movs'?'Movimientos':UI.view==='analisis'?'Análisis':'Más'}</span><button class="iconbtn" data-act="voz" aria-label="Dictar un movimiento" title="Dictar un movimiento">${VOZ_MIC}</button></div>`;
 }
 function renderBanner(){
   let h='';
