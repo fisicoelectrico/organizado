@@ -2181,7 +2181,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.7';
+const APP_VERSION='2.8';
 const MARK=`<svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="43" r="12" fill="#E9BC55"/><circle cx="32" cy="43" r="7.5" fill="none" stroke="#1D285A" stroke-opacity=".28" stroke-width="2"/><path d="M32 31V21" stroke="#3FC48A" stroke-width="3.2" stroke-linecap="round"/><path d="M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z" fill="#3FC48A"/><path d="M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z" fill="#3FC48A" fill-opacity=".75"/></svg>`;
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
@@ -2240,6 +2240,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.8',f:'2026-11-07',items:['Acceso directo en Android: mantén pulsado el ícono de la app y toca <b>Dictar movimiento</b> para abrir el dictado directo.']},
   {v:'2.7',f:'2026-11-07',items:['Nuevo: <b>dicta tus movimientos</b>. Toca el micrófono (arriba, o «Dictar» al registrar) y di, por ejemplo: «gasté 70 mil en Bancolombia en la categoría almuerzo, de tipo lujo». La app entiende monto, cuenta, categoría, tipo y fecha (hoy si no la dices).','Nunca guarda sola: te muestra lo que entendió en una tarjeta editable, marca en rojo lo que falta y en amarillo lo que dudó, y tú tocas Guardar.']},
   {v:'2.6',f:'2026-11-02',items:['La animación de inicio ahora es más lenta (unos 6 segundos) para que alcances a verla. Si tienes prisa, un toque en la pantalla la salta.']},
   {v:'2.5',f:'2026-11-02',items:['Nuevo logo <b>Brote</b>: una moneda ahorrada que echa hojas. Lo verás en el ícono de la app, la pestaña del navegador y el encabezado.','Al abrir la app, una animación corta muestra la moneda brotando. Dura poco más de un segundo, no bloquea los toques y no aparece si tu dispositivo tiene activado reducir movimiento.']},
@@ -2915,7 +2916,9 @@ document.addEventListener('visibilitychange',()=>{
 addEventListener('online',()=>{if(cloud.user)cloudSync()});
 
 function startup(){started=true;const n=processFijos();render();if(n)setTimeout(()=>toast(`Se registraron ${n} pago${n>1?'s':''} fijo${n>1?'s':''}`),600);
-  if(!tourSeen()){verMark();setTimeout(startTour,700)}else askNameOnOpen(()=>showNovedades(showAlertsOnOpen))}
+  if(!tourSeen()){verMark();setTimeout(startTour,700)}else askNameOnOpen(()=>showNovedades(showAlertsOnOpen));
+  /* Acceso directo del ícono («Dictar movimiento», manifest.webmanifest): abre ?voz=1 y va directo al dictado */
+  try{if(new URLSearchParams(location.search).get('voz')==='1'&&tourSeen()){history.replaceState(null,'',location.pathname);setTimeout(()=>vozSheet(''),1300)}}catch(e){}}
 if(pinGet())showLock(boot);else boot();
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render())}catch(e){}
 new MutationObserver(()=>render()).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});

@@ -116,4 +116,12 @@ process.on('unhandledRejection',e=>{console.log('ERRORES JS:',globalThis.__p&&gl
   for(const v of ['inicio','movs','analisis','mas']){await p.evaluate(v=>go(v),v);await p.waitForTimeout(150);}
   ok(p.errs.length===0,'las vistas siguen funcionando sin errores '+p.errs.join('|'));
   await ctx.close();
+  console.log('8. Acceso directo del ícono (?voz=1)');
+  ({ctx,p}=await nueva());
+  await p.goto(URL+'?voz=1');await p.waitForSelector('#voz-txt',{timeout:6000});
+  ok(true,'abrir con ?voz=1 va directo al dictado');
+  ok(await p.evaluate(()=>location.search===''),'y limpia la dirección para no repetirlo al recargar');
+  const man=JSON.parse(fs.readFileSync(path.join(ROOT,'manifest.webmanifest'),'utf8'));
+  ok(man.shortcuts&&man.shortcuts[0].url==='./?voz=1'&&man.shortcuts[0].icons.length>0,'el manifiesto declara el acceso directo');
+  await ctx.close();
   await b.close();srv.close();console.log(fallas?`\n${fallas} FALLAS`:'\nTodo bien');process.exit(fallas?1:0)})();
