@@ -12,6 +12,16 @@ Chrome envía el audio a los servidores de Google para transcribirlo, así que d
 
 Pruebas (Node 18+ y `playwright` instalado): `node tests/test_voz.js` (interpretador, sin navegador) y `node tests/test_voz_ui.js` (interfaz con un reconocedor falso).
 
+## Notificaciones de pagos (v2.9)
+
+En **Más › Notificaciones** hay un interruptor que pide el permiso del navegador y activa los avisos de deudas que vencen en los próximos 7 días o ya se pasaron, y de pagos fijos por confirmar. Todo ocurre en el dispositivo: la app calcula los pagos y los muestra con la Notification API a través de `sw.js`; no hay servidor de push. Los avisos no llevan montos.
+
+- Con la app abierta en segundo plano: revisa cada 15 minutos y avisa una vez al día por cada cambio.
+- Con la app cerrada: solo donde el navegador soporta *Periodic Background Sync* (Chrome con la app instalada). La app deja una copia mínima de los pagos en la caché `notif-data` y `sw.js` la lee cuando el navegador lo despierta.
+- iPhone y iPad: solo con la app agregada a la pantalla de inicio (iOS 16.4+), y sin avisos con la app cerrada.
+
+Avisos garantizados con la app cerrada requieren push desde el servidor (Supabase Edge Function + cron + claves VAPID); no está implementado. Prueba: `node tests/test_notif.js`.
+
 ## Publicar con GitHub Pages
 
 1. Crea un repositorio público en GitHub, por ejemplo `organizado`.

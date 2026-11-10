@@ -647,6 +647,7 @@ const ICON={
   instalar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
   nube:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9.5a4 4 0 0 1-.5 8.5z"/></svg>',
   candado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  campana:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg>',
   pronto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
 };
 
@@ -766,7 +767,7 @@ function alertaTxt(a){return a.x.tipo==='debo'?`Pagar a ${a.x.persona}`:`${a.x.p
 let UI={view:'inicio',month:curMonth(),per:'mes',anMonth:curMonth(),ft:'todos',fc:'',fcat:'',q:'',dTab:'me_deben',pMonth:curMonth(),patPer:'90',patN:30,priv:false};
 try{UI.priv=localStorage.getItem('organizado.priv')==='1'}catch(e){}
 try{const u=JSON.parse(localStorage.getItem(UIKEY)||'null');if(u&&u.view)UI.view=u.view}catch(e){}
-const TITLES={novedades:'Novedades',opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',cuenta:'Cuenta y nube',instalar:'Instalar la app',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
+const TITLES={novedades:'Novedades',opinion:'Envíanos tu opinión',atajos:'Atajos',fijos:'Pagos fijos',seguridad:'Seguridad',notificaciones:'Notificaciones',cuenta:'Cuenta y nube',instalar:'Instalar la app',perfil:'Personalizar',patrimonio:'Patrimonio neto',nomina:'Calculadora de nómina',presupuesto:'Presupuesto',deudas:'Deudas y préstamos',cuentas:'Cuentas',categorias:'Categorías',datos:'Importar y respaldos'};
 function go(v,o){UI.view=v;if(o)Object.assign(UI,o);try{localStorage.setItem(UIKEY,JSON.stringify({view:v}))}catch(e){}render();window.scrollTo(0,0)}
 
 /* ============ charts ============ */
@@ -955,6 +956,7 @@ V.mas={html(){
     ${it('categorias','cat','Categorías','Nombres y clasificación lujo / necesidad')}
     ${it('atajos','rayo','Atajos','Registra lo que repites con un toque')}
     ${CLOUD_OK?it('cuenta','nube','Cuenta y nube',cloud.user?esc(cloud.user.email||'Sesión iniciada'):'Ve tus datos desde cualquier dispositivo'):''}
+    ${it('notificaciones','campana','Notificaciones',notifOn()?'Activadas: avisos de pagos por vencer':'Recibe avisos de tus pagos')}
     ${it('seguridad','candado','Seguridad',pinGet()?'PIN activado':'Pon un PIN para abrir la app')}
     ${it('datos','datos','Importar y respaldos','Trae tu Excel, exporta tus datos')}
     ${PWA_OK&&!isStandalone()?it('instalar','instalar','Instalar la app','Ábrela como una app, sin la barra del navegador'):''}
@@ -2181,7 +2183,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.8';
+const APP_VERSION='2.9';
 const MARK=`<svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="43" r="12" fill="#E9BC55"/><circle cx="32" cy="43" r="7.5" fill="none" stroke="#1D285A" stroke-opacity=".28" stroke-width="2"/><path d="M32 31V21" stroke="#3FC48A" stroke-width="3.2" stroke-linecap="round"/><path d="M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z" fill="#3FC48A"/><path d="M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z" fill="#3FC48A" fill-opacity=".75"/></svg>`;
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
@@ -2240,6 +2242,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.9',f:'2026-11-10',items:['Nuevo: <b>notificaciones</b>. En Más › Notificaciones activa el interruptor y la app te avisa de los pagos que vencen en los próximos 7 días, los que ya se pasaron y los pagos fijos por confirmar.','Los avisos llegan con la app abierta o en segundo plano. En Chrome (Android y computador) con la app instalada también pueden llegar con la app cerrada.']},
   {v:'2.8',f:'2026-11-07',items:['Acceso directo en Android: mantén pulsado el ícono de la app y toca <b>Dictar movimiento</b> para abrir el dictado directo.']},
   {v:'2.7',f:'2026-11-07',items:['Nuevo: <b>dicta tus movimientos</b>. Toca el micrófono (arriba, o «Dictar» al registrar) y di, por ejemplo: «gasté 70 mil en Bancolombia en la categoría almuerzo, de tipo lujo». La app entiende monto, cuenta, categoría, tipo y fecha (hoy si no la dices).','Nunca guarda sola: te muestra lo que entendió en una tarjeta editable, marca en rojo lo que falta y en amarillo lo que dudó, y tú tocas Guardar.']},
   {v:'2.6',f:'2026-11-02',items:['La animación de inicio ahora es más lenta (unos 6 segundos) para que alcances a verla. Si tienes prisa, un toque en la pantalla la salta.']},
@@ -2437,6 +2440,77 @@ function showAlertsOnOpen(){
     <div class="card" style="padding:4px 16px">${al.map(alertRow).join('')}</div>
     <div class="stack" style="margin-top:14px"><button class="btn block" data-act="closeSheet">Entendido</button></div>`);
 }
+
+/* ============ notificaciones de pagos ============
+   Todo es local: la app mira tus deudas y pagos fijos y le pide al navegador que muestre un aviso (Notification API, vía service worker).
+   Ningún dato sale del dispositivo. Los avisos NO llevan montos, solo a quién y cuándo, para no exponer tus cifras en la pantalla bloqueada.
+   Con la app cerrada solo llegan donde el navegador permite Periodic Background Sync (Chrome con la app instalada); para eso la app deja
+   una copia mínima de los pagos próximos en la caché «notif-data», que sw.js lee. Un push real desde el servidor sería el siguiente paso. */
+const NOTIFK='organizado.notif',NOTIFSIG='organizado.notif.sig',NOTIF_TAG='organizado-pagos';
+const notifOK=()=>'Notification' in window&&'serviceWorker' in navigator&&PWA_OK;
+const notifOn=()=>{try{return localStorage.getItem(NOTIFK)==='1'&&notifOK()&&Notification.permission==='granted'}catch(e){return false}};
+const notifWhen=n=>n<0?`vencido hace ${-n} día${n===-1?'':'s'}`:n===0?'vence hoy':n===1?'vence mañana':`vence en ${n} días`;
+function notifItems(){
+  const out=alertas().map(a=>({txt:alertaTxt(a),prox:a.x.prox}));
+  const fp=fijosPendientes().length;if(fp)out.push({txt:`${fp} pago${fp>1?'s':''} fijo${fp>1?'s':''} por confirmar`});
+  return out}
+const notifLine=it=>it.prox?`${it.txt} · ${notifWhen(daysTo(it.prox))}`:it.txt;
+async function notifSnapshot(){try{
+  const c=await caches.open('notif-data');
+  await c.put('./notif-snapshot.json',new Response(JSON.stringify({items:notifItems().filter(i=>i.prox)}),{headers:{'content-type':'application/json'}}))}catch(e){}}
+async function notifShow(items,forzar){
+  const lines=items.map(notifLine);
+  const title=items.length?(items.some(i=>i.prox&&daysTo(i.prox)<0)?'Tienes pagos vencidos':'Tienes pagos por atender'):'Notificaciones activadas';
+  const body=items.length?lines.slice(0,4).join('\n')+(lines.length>4?`\n… y ${lines.length-4} más`:''):'Así te avisaremos cuando un pago esté por vencer.';
+  const opts={body,icon:'icons/icon-192.png',badge:'icons/icon-192.png',tag:NOTIF_TAG,renotify:!!forzar,data:{url:'./'}};
+  const reg=await navigator.serviceWorker.getRegistration();
+  if(reg&&reg.showNotification)await reg.showNotification(title,opts);else new Notification(title,opts)}
+/* Revisa cada 15 min y al volver: si hay pagos por atender y la app está en segundo plano, avisa una vez al día por cada cambio. */
+async function notifCheck(){
+  if(!notifOn()||!started)return;
+  await notifSnapshot();
+  if(!document.hidden)return;                 /* con la app a la vista ya está el recordatorio dentro de la app */
+  const items=notifItems();if(!items.length)return;
+  const sig=today()+':'+items.map(notifLine).join('|');
+  let last=null;try{last=localStorage.getItem(NOTIFSIG)}catch(e){}
+  if(last===sig)return;
+  try{localStorage.setItem(NOTIFSIG,sig)}catch(e){}
+  try{await notifShow(items)}catch(e){}}
+async function notifBg(on){try{
+  const reg=await navigator.serviceWorker.ready;if(!('periodicSync' in reg))return false;
+  if(on){await reg.periodicSync.register('organizado-pagos',{minInterval:12*36e5});return true}
+  await reg.periodicSync.unregister('organizado-pagos');return false}catch(e){return false}}
+async function notifBgOn(){try{const reg=await navigator.serviceWorker.ready;return 'periodicSync' in reg&&(await reg.periodicSync.getTags()).includes('organizado-pagos')}catch(e){return false}}
+async function notifToggle(on){
+  if(!on){try{localStorage.setItem(NOTIFK,'0')}catch(e){}await notifBg(false);toast('Notificaciones apagadas');return render()}
+  let perm=Notification.permission;
+  if(perm==='default'){try{perm=await Notification.requestPermission()}catch(e){perm='denied'}}
+  if(perm!=='granted'){toast('El navegador no dio permiso para avisarte');return render()}
+  try{localStorage.setItem(NOTIFK,'1')}catch(e){}
+  await notifSnapshot();await notifBg(true);
+  try{await notifShow([],true)}catch(e){}
+  toast('Notificaciones activadas');render()}
+V.notificaciones={html(){
+  const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(!notifOK()){
+    return`<div class="card"><b style="font-size:15px">No disponible aquí</b><p class="small muted" style="margin:6px 0 0">${ios&&!isStandalone()?'En iPhone y iPad los avisos solo funcionan con la app instalada: Compartir › <b>Agregar a pantalla de inicio</b>, y luego actívalos desde el ícono.':'Este navegador o esta forma de abrir la app no permite notificaciones. Prueba con Chrome, Edge o Safari desde la dirección publicada de la app.'}</p></div>`}
+  const perm=Notification.permission,on=notifOn(),bloq=perm==='denied';
+  const items=notifItems();
+  return`<div class="card"><label class="prow-top" style="align-items:center;cursor:pointer"><span><b style="font-size:15px">Activar notificaciones</b><br><span class="small muted">${bloq?'Bloqueadas en el navegador (mira abajo cómo permitirlas).':on?'Activadas en este dispositivo.':'Avisos de pagos por vencer, vencidos y pagos fijos por confirmar.'}</span></span><input type="checkbox" id="nt-on" role="switch" ${on?'checked':''} ${bloq?'disabled':''} style="width:26px;height:26px;flex:0 0 auto"></label>
+    ${on?`<div class="stack" style="margin-top:14px"><button class="btn block ghost" data-act="notifTest">Enviar un aviso de prueba</button></div>`:''}</div>
+  ${bloq?`<div class="card"><b style="font-size:14px">Permitir en el navegador</b><p class="small muted" style="margin:6px 0 0">Toca el candado (o los ajustes del sitio) junto a la dirección, cambia <b>Notificaciones</b> a <b>Permitir</b> y vuelve a esta pantalla.</p></div>`:''}
+  <div class="sec-h"><h2>Qué te avisará</h2></div>
+  <div class="card"><ul class="small" style="margin:0;padding-left:20px;display:grid;gap:6px"><li>Deudas y préstamos que vencen en los próximos 7 días o ya se pasaron.</li><li>Pagos fijos que debes confirmar.</li><li>Los avisos no muestran montos, solo a quién y cuándo, para cuidar tu privacidad en la pantalla bloqueada.</li></ul>
+    <p class="small" style="margin:12px 0 0">Ahora mismo: <b>${items.length?items.length+' cosa'+(items.length>1?'s':'')+' por atender':'nada pendiente'}</b>.</p></div>
+  <div class="sec-h"><h2>Cómo funciona</h2></div>
+  <div class="card"><p class="small muted" style="margin:0">La app revisa tus pagos en tu propio dispositivo (nada se envía a ningún servidor) y le pide al navegador que muestre el aviso. Por eso llega mientras la app esté abierta o en segundo plano, y no hay aviso si la miras de frente: ahí ya ves el recordatorio dentro de la app.</p>
+    <p class="small muted" style="margin:10px 0 0" id="nt-bg">${on?'Comprobando si tu navegador permite avisos con la app cerrada…':'Con la app instalada, Chrome puede avisarte incluso con la app cerrada.'}</p>
+    <p class="small muted" style="margin:10px 0 0">El permiso es por dispositivo: actívalo en cada celular o computador donde lo quieras.</p></div>`},
+mount(){const c=$('#nt-on');if(c)c.onchange=()=>notifToggle(c.checked);
+  if(notifOn())notifBgOn().then(v=>{const e=$('#nt-bg');if(e)e.textContent=v?'Aviso con la app cerrada: activo (Chrome decide cuándo revisar, normalmente cada medio día o más).':'Tu navegador no permite avisos con la app cerrada: llegarán con la app abierta o en segundo plano. Instalarla (Más › Instalar la app) ayuda en Chrome.'})}};
+ACT.notifTest=async()=>{try{await notifShow(notifItems(),true)}catch(e){toast('No se pudo mostrar el aviso')}};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)notifSnapshot()});
+setInterval(notifCheck,15*60*1000);
 
 /* ============ menú lateral (computador) ============ */
 /* ============ metas de ahorro ============ */
@@ -2637,7 +2711,7 @@ function renderSide(){
   <button class="btn block side-add" data-act="newMov"><span>+ Registrar</span><kbd title="Atajo de teclado">N</kbd></button>
   <nav class="side-nav"><span class="side-h">Principal</span>${b('inicio',T('inicio'),'Cartera')}${b('movs',T('movs'),'Movimientos')}${b('analisis',T('analisis'),'Análisis')}
   <div class="side-tools" style="display:grid;gap:2px"><span class="side-h">Herramientas</span>${b('metas',ICON.meta,'Metas de ahorro')}${b('compras',ICON.compras,'Lista de compras')}${b('patrimonio',ICON.pat,'Patrimonio neto')}${b('nomina',ICON.nomina,'Calculadora de nómina')}${b('fijos',ICON.repetir,'Pagos fijos')}${b('presupuesto',ICON.ppto,'Presupuesto')}${b('deudas',ICON.deuda,'Deudas y préstamos','<span class="cnt" hidden></span>')}</div>
-  <span class="side-h">Ajustes</span>${b('cuentas',ICON.cuenta,'Cuentas')}${b('categorias',ICON.cat,'Categorías')}${b('atajos',ICON.rayo,'Atajos')}${CLOUD_OK?b('cuenta',ICON.nube,'Cuenta y nube'):''}${b('seguridad',ICON.candado,'Seguridad')}${b('perfil',ICON.paleta,'Personalizar')}${b('datos',ICON.datos,'Importar y respaldos')}${b('mas',$('.tab[data-tab=mas] svg').outerHTML,'Más')}${b('opinion','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>','Envíanos tu opinión')}</nav>
+  <span class="side-h">Ajustes</span>${b('cuentas',ICON.cuenta,'Cuentas')}${b('categorias',ICON.cat,'Categorías')}${b('atajos',ICON.rayo,'Atajos')}${CLOUD_OK?b('cuenta',ICON.nube,'Cuenta y nube'):''}${b('notificaciones',ICON.campana,'Notificaciones')}${b('seguridad',ICON.candado,'Seguridad')}${b('perfil',ICON.paleta,'Personalizar')}${b('datos',ICON.datos,'Importar y respaldos')}${b('mas',$('.tab[data-tab=mas] svg').outerHTML,'Más')}${b('opinion','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>','Envíanos tu opinión')}</nav>
   <p class="side-foot"><button class="link" data-go="novedades">Novedades · v${APP_VERSION}</button><br>${cloud.user?'Tus datos se sincronizan con tu cuenta.':'Tus datos se guardan solo en este navegador. Descarga un respaldo cada semana.'}</p>`;
 }
 const NARROW=new Set(['metas','compras','novedades','opinion','atajos','fijos','seguridad','cuenta','instalar','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
@@ -2915,7 +2989,7 @@ document.addEventListener('visibilitychange',()=>{
   else if(Date.now()-cloud.last>20000&&!lockOn&&!cloud.ask&&started)cloudSync()});
 addEventListener('online',()=>{if(cloud.user)cloudSync()});
 
-function startup(){started=true;const n=processFijos();render();if(n)setTimeout(()=>toast(`Se registraron ${n} pago${n>1?'s':''} fijo${n>1?'s':''}`),600);
+function startup(){started=true;const n=processFijos();render();setTimeout(notifCheck,1500);if(n)setTimeout(()=>toast(`Se registraron ${n} pago${n>1?'s':''} fijo${n>1?'s':''}`),600);
   if(!tourSeen()){verMark();setTimeout(startTour,700)}else askNameOnOpen(()=>showNovedades(showAlertsOnOpen));
   /* Acceso directo del ícono («Dictar movimiento», manifest.webmanifest): abre ?voz=1 y va directo al dictado */
   try{if(new URLSearchParams(location.search).get('voz')==='1'&&tourSeen()){history.replaceState(null,'',location.pathname);setTimeout(()=>vozSheet(''),1300)}}catch(e){}}
