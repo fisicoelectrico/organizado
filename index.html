@@ -562,6 +562,12 @@ kbd{font-family:var(--f-body);font-size:11px;font-weight:800;padding:1px 6px;bor
 @keyframes spUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes spOut{to{opacity:0;visibility:hidden}}
 @media (prefers-reduced-motion: reduce){.splash{display:none}}
+.fxr{padding:12px 14px;border-bottom:1px solid var(--line);display:grid;gap:8px;border-left:4px solid transparent}
+.fxr:last-child{border-bottom:0}.fxr.fx-bad{border-left-color:var(--neg);background:var(--neg-soft)}.fxr.fx-doubt{border-left-color:var(--warn);background:var(--warn-soft)}
+.fx-list{padding:0;overflow:hidden}.fx-txt{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-word}
+.fx-3{display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:8px}.fx-base{margin:0}.fxr .field{margin:0}
+.fx-spin{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--gold,currentColor);animation:fxs 1s linear infinite}
+@keyframes fxs{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.fx-spin{animation-duration:3s}}
 </style>
 </head>
 <body>
@@ -959,6 +965,7 @@ V.mas={html(){
     ${it('notificaciones','campana','Notificaciones',notifOn()?'Activadas: avisos de pagos por vencer':'Recibe avisos de tus pagos')}
     ${it('seguridad','candado','Seguridad',pinGet()?'PIN activado':'Pon un PIN para abrir la app')}
     ${it('datos','datos','Importar y respaldos','Trae tu Excel, exporta tus datos')}
+    ${ADMIN.ok?it('facturas','recibo','Facturas y precios','Administrador · lee facturas con foto'):''}
     ${PWA_OK&&!isStandalone()?it('instalar','instalar','Instalar la app','Ábrela como una app, sin la barra del navegador'):''}
   </div></div>
   <div class="sec-h"><h2>En camino</h2></div>
@@ -2183,7 +2190,7 @@ function homeCfgHTML(){const h=homeCfg(),o=h.opt;
 
 /* ============ reseñas y sugerencias ============ */
 const CORREO_OPINIONES='fred.yricardo12@gmail.com';
-const APP_VERSION='2.9';
+const APP_VERSION='2.10';
 const MARK=`<svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="43" r="12" fill="#E9BC55"/><circle cx="32" cy="43" r="7.5" fill="none" stroke="#1D285A" stroke-opacity=".28" stroke-width="2"/><path d="M32 31V21" stroke="#3FC48A" stroke-width="3.2" stroke-linecap="round"/><path d="M32 23C32 15 38 10 49 10C49 19 43 24 32 23Z" fill="#3FC48A"/><path d="M32 26C31 20 26 16 17 17C17 24 22 27 32 26Z" fill="#3FC48A" fill-opacity=".75"/></svg>`;
 function usoDesde(){let d=null;try{d=localStorage.getItem('organizado.desde')}catch(e){}
   if(!d){d=today();try{localStorage.setItem('organizado.desde',d)}catch(e){}}return d}
@@ -2242,6 +2249,7 @@ function swipeHint(){
 
 /* ============ novedades de cada versión ============ */
 const CHANGELOG=[
+  {v:'2.10',f:'2026-11-10',items:['Ajustes internos para una función que llegará pronto.']},
   {v:'2.9',f:'2026-11-10',items:['Nuevo: <b>notificaciones</b>. En Más › Notificaciones activa el interruptor y la app te avisa de los pagos que vencen en los próximos 7 días, los que ya se pasaron y los pagos fijos por confirmar.','Los avisos llegan con la app abierta o en segundo plano. En Chrome (Android y computador) con la app instalada también pueden llegar con la app cerrada.']},
   {v:'2.8',f:'2026-11-07',items:['Acceso directo en Android: mantén pulsado el ícono de la app y toca <b>Dictar movimiento</b> para abrir el dictado directo.']},
   {v:'2.7',f:'2026-11-07',items:['Nuevo: <b>dicta tus movimientos</b>. Toca el micrófono (arriba, o «Dictar» al registrar) y di, por ejemplo: «gasté 70 mil en Bancolombia en la categoría almuerzo, de tipo lujo». La app entiende monto, cuenta, categoría, tipo y fecha (hoy si no la dices).','Nunca guarda sola: te muestra lo que entendió en una tarjeta editable, marca en rojo lo que falta y en amarillo lo que dudó, y tú tocas Guardar.']},
@@ -2717,6 +2725,170 @@ function renderSide(){
 const NARROW=new Set(['metas','compras','novedades','opinion','atajos','fijos','seguridad','cuenta','instalar','movs','presupuesto','deudas','cuentas','categorias','datos','perfil','mas']);
 document.addEventListener('keydown',e=>{if(e.key!=='n'&&e.key!=='N')return;if(e.ctrlKey||e.metaKey||e.altKey||tourOn)return;const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;if(!$('#sheet').hidden)return;e.preventDefault();openMovForm(null)});
 
+/* ============ facturas e historial de precios (solo administrador, v3.0) ============ */
+/* La foto se reduce en el celular, la Edge Function «leer-factura» la lee con IA y devuelve líneas.
+   Nada se guarda sin pasar por la pantalla de revisión (rojo = falta un dato, amarillo = dudoso). */
+/*FX-INICIO*/
+const ADMIN={ok:false};
+async function adminCheck(){
+  let ok=false;if(sb&&cloud.user){try{const{data}=await sb.rpc('es_admin');ok=data===true}catch(e){}}
+  const cambio=ok!==ADMIN.ok;ADMIN.ok=ok;if(cambio&&started&&(UI.view==='mas'||UI.view==='facturas'))render()}
+TITLES.facturas='Facturas y precios';NARROW.add('facturas');
+ICON.recibo='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>';
+const FX_U={kg:'kg',l:'litro',und:'unidad'};
+const FX={paso:'inicio',datos:null,revisado:false,resumen:null,facturas:null,q:'',err:''};
+const fxNum=v=>{const n=Number(String(v??'').replace(',','.'));return isFinite(n)&&n>0?n:0};
+const fxBase=it=>{const c=fxNum(it.cantidad)*fxNum(it.contenido);return c&&it.precio_total>0?it.precio_total/c:0};
+const fxFalta=it=>!String(it.producto||'').trim()||!(it.precio_total>0)||!fxNum(it.cantidad)||!fxNum(it.contenido);
+async function fxErr(error){try{const j=await error.context.json();if(j&&j.error)return j.error}catch(e){}return error&&error.message||'No se pudo conectar'}
+
+function fxImagen(file){return new Promise((res,rej)=>{
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{const M=2400,k=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.85).split(',')[1])};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('img'))};img.src=url})}
+
+async function fxLeer(file){
+  if(!file)return;if(!sb){toast('Necesitas internet y sesión iniciada');return}
+  FX.paso='leyendo';FX.err='';render();
+  try{
+    const imagen=await fxImagen(file);
+    const{data,error}=await sb.functions.invoke('leer-factura',{body:{imagen,tipo:'image/jpeg'}});
+    if(error)throw new Error(await fxErr(error));
+    if(!data.es_factura||!(data.items||[]).length)throw new Error('No encontré productos en la foto. Prueba con más luz y la factura completa y derecha.');
+    /* lo aprendido manda: si ya confirmaste este texto antes, se usa ese producto */
+    let al={};try{const r=await sb.from('alias_productos').select('texto,productos(nombre,unidad)');for(const a of r.data||[])if(a.productos)al[a.texto]=a.productos}catch(e){}
+    FX.datos={tienda:data.tienda||'',fecha:/^\d{4}-\d{2}-\d{2}$/.test(data.fecha||'')&&data.fecha<=today()?data.fecha:today(),total:Math.round(+data.total||0),
+      items:data.items.map((x,i)=>{const a=al[String(x.texto||'').trim().toLowerCase()];
+        return{k:i,texto:String(x.texto||'').slice(0,120),producto:a?a.nombre:String(x.producto||'').slice(0,80),unidad:a?a.unidad:(FX_U[x.unidad]?x.unidad:'und'),
+          cantidad:+x.cantidad||1,contenido:+x.contenido||1,precio_total:Math.round(+x.precio_total||0),seguro:a?true:x.seguro!==false,aprendido:!!a}})};
+    FX.revisado=false;FX.paso='revisar';
+  }catch(e){FX.paso='inicio';FX.err=e.message==='img'?'No se pudo abrir la imagen.':e.message}
+  render();window.scrollTo(0,0)}
+
+async function fxCargar(){
+  if(!sb||!ADMIN.ok)return;
+  try{const[r1,r2]=await Promise.all([sb.from('precios_resumen').select('*').order('nombre'),
+      sb.from('facturas').select('id,tienda,fecha,total,items_factura(count)').order('fecha',{ascending:false}).order('id',{ascending:false}).limit(15)]);
+    if(r1.error||r2.error)throw r1.error||r2.error;FX.resumen=r1.data||[];FX.facturas=r2.data||[]}
+  catch(e){FX.resumen=FX.resumen||[];FX.facturas=FX.facturas||[];FX.err='No se pudo cargar el historial: '+(e.message||e)}
+  if(UI.view==='facturas'&&FX.paso==='inicio')render()}
+
+function fxRowHTML(it,i){
+  const falta=fxFalta(it),cls=falta?'fx-bad':!it.seguro?'fx-doubt':'',b=fxBase(it);
+  return`<div class="fxr ${cls}" data-fx-row="${i}">
+    <div class="prow-top"><span class="small muted fx-txt">${esc(it.texto||'Línea agregada a mano')}</span><span>${it.aprendido?'<span class="status ok">Aprendido</span> ':''}${!it.seguro?'<span class="status warn">Dudoso</span> ':''}<button class="iconbtn" data-act="fxDel" data-i="${i}" aria-label="Quitar línea">✕</button></span></div>
+    <div class="row2"><label class="field"><span>Producto</span><input class="inp" data-fx="producto" data-i="${i}" list="fx-prods" maxlength="80" value="${esc(it.producto)}" placeholder="Ej. Arroz"></label>
+      <label class="field"><span>Pagado</span><input class="inp" data-fx="precio_total" data-i="${i}" inputmode="numeric" value="${it.precio_total?fmtTyping(String(it.precio_total)):''}" placeholder="0"></label></div>
+    <div class="fx-3"><label class="field"><span>Empaques</span><input class="inp" data-fx="cantidad" data-i="${i}" inputmode="decimal" value="${it.cantidad}"></label>
+      <label class="field"><span>Contenido</span><input class="inp" data-fx="contenido" data-i="${i}" inputmode="decimal" value="${it.contenido}"></label>
+      <label class="field"><span>Unidad</span><select class="inp" data-fx="unidad" data-i="${i}">${Object.entries(FX_U).map(([v,l])=>`<option value="${v}" ${it.unidad===v?'selected':''}>${l}</option>`).join('')}</select></label></div>
+    <p class="small fx-base" data-fx-base="${i}">${b?`= <b class="num">${fmt(b)}</b> por ${FX_U[it.unidad]}`:'<span class="neg">Falta un dato para calcular el precio</span>'}</p></div>`}
+
+function fxChequeo(){
+  const d=FX.datos,suma=d.items.reduce((a,x)=>a+(x.precio_total||0),0),dif=d.total?suma-d.total:0;
+  const nf=d.items.filter(fxFalta).length,nd=d.items.filter(x=>!x.seguro&&!fxFalta(x)).length;
+  const okTot=!d.total||Math.abs(dif)<=Math.max(100,d.total*.01);
+  return`<div class="prow-top"><span>Suma de líneas</span><b class="num">${fmt(suma)}</b></div>
+    <div class="prow-top"><span>Total de la factura</span><b class="num">${d.total?fmt(d.total):'—'}</b></div>
+    <p class="small" style="margin:8px 0 0">${!d.total?'<span class="status warn">● Escribe el total para comprobar</span>':okTot?'<span class="status ok">✓ Cuadra con el total</span>':`<span class="status over">▲ Diferencia de ${fmt(Math.abs(dif))}</span> <span class="muted">${dif<0?'puede faltar una línea o un precio quedó bajo':'puede sobrar una línea o un descuento no se restó'}. Si son bolsas o impuestos, está bien.</span>`}</p>
+    ${nf?`<p class="small neg" style="margin:6px 0 0">${nf} línea${nf>1?'s':''} en rojo con datos por completar.</p>`:''}${nd?`<p class="small" style="margin:6px 0 0;color:var(--warn)">${nd} línea${nd>1?'s':''} dudosa${nd>1?'s':''} en amarillo: compárala${nd>1?'s':''} con la foto.</p>`:''}`}
+
+function fxRevisarHTML(){
+  const d=FX.datos,nf=d.items.filter(fxFalta).length;
+  return`<div class="stack"><div class="card"><b style="font-size:15px">Revisa antes de guardar</b><p class="small muted" style="margin:4px 0 12px">Compara con la factura. Corrige el nombre del producto: la próxima vez lo reconoceré solo.</p>
+    <div class="row2"><label class="field"><span>Tienda</span><input class="inp" id="fx-tienda" maxlength="80" value="${esc(d.tienda)}" placeholder="Ej. D1"></label>
+    <label class="field"><span>Fecha</span><input class="inp" id="fx-fecha" type="date" max="${today()}" value="${d.fecha}"></label></div>
+    <label class="field"><span>Total de la factura</span><input class="inp" id="fx-total" inputmode="numeric" value="${d.total?fmtTyping(String(d.total)):''}"></label></div>
+  <div class="card" id="fx-check">${fxChequeo()}</div>
+  <datalist id="fx-prods">${(FX.resumen||[]).map(p=>`<option value="${esc(p.nombre)}">`).join('')}</datalist>
+  <div class="card fx-list">${d.items.map(fxRowHTML).join('')}</div>
+  <button class="btn block ghost" data-act="fxAdd">+ Agregar una línea</button>
+  <button class="btn block" data-act="fxGuardar" id="fx-save" ${nf?'disabled':''}>${nf?`Completa ${nf} línea${nf>1?'s':''} en rojo`:'Guardar factura'}</button>
+  <button class="btn block ghost" data-act="fxCancelar">Descartar</button></div>`}
+
+function fxInicioHTML(){
+  const q=norm(FX.q),res=(FX.resumen||[]).filter(p=>!q||norm(p.nombre).includes(q));
+  return`<div class="stack"><div class="card"><b style="font-size:15px">Lee una factura con una foto</b>
+    <p class="small muted" style="margin:4px 0 12px">Factura completa, derecha y con buena luz. Si es muy larga, tómala en dos fotos. La foto no se guarda: solo los productos y precios que confirmes.</p>
+    <div class="stack"><label class="btn block">📷 Tomar foto<input type="file" accept="image/*" capture="environment" data-fx-file hidden></label>
+    <label class="btn block ghost">Elegir de la galería<input type="file" accept="image/*" data-fx-file hidden></label></div>
+    ${FX.err?`<p class="err" style="margin:10px 0 0">${esc(FX.err)}</p>`:''}</div>
+  <div class="sec-h"><h2>Precios · últimos 90 días</h2></div>
+  ${FX.resumen===null?'<div class="card empty">Cargando…</div>':FX.resumen.length?`<input class="inp" id="fx-q" placeholder="Buscar producto" value="${esc(FX.q)}" autocomplete="off">
+    <div class="list">${res.map(p=>`<button class="mov" data-act="fxProd" data-id="${p.producto_id}"><span class="ico" style="--h:${hue(p.nombre)}">${esc(initials(p.nombre))}</span><span class="mov-main"><span class="mov-t">${esc(p.nombre)}</span><span class="mov-s">${p.n} precio${p.n>1?'s':''} · último ${fmt(p.ultimo)}${p.ultima_tienda?' en '+esc(p.ultima_tienda):''}</span></span><span class="mov-a num">${fmt(p.mediana)}<small>por ${FX_U[p.unidad]}</small></span></button>`).join('')||'<div class="empty">Sin coincidencias.</div>'}</div>
+    <p class="small muted" style="margin:0 2px">El precio grande es la mediana: el del medio, para que una promoción o un error no lo muevan.</p>`:'<div class="card empty">Aún no hay precios. Lee tu primera factura.</div>'}
+  ${FX.facturas&&FX.facturas.length?`<div class="sec-h"><h2>Últimas facturas</h2></div><div class="list">${FX.facturas.map(f=>`<button class="mov" data-act="fxFact" data-id="${f.id}"><span class="ico" style="--h:${hue(f.tienda||'?')}">${esc(initials(f.tienda||'?'))}</span><span class="mov-main"><span class="mov-t">${esc(f.tienda||'Sin tienda')}</span><span class="mov-s">${dayLabel(f.fecha)} ${f.fecha.slice(0,4)} · ${(f.items_factura&&f.items_factura[0]?f.items_factura[0].count:0)} productos</span></span><span class="mov-a num">${f.total!=null?fmt(f.total):''}</span></button>`).join('')}</div>`:''}</div>`}
+
+V.facturas={html(){
+  if(!ADMIN.ok)return`<div class="card"><b style="font-size:15px">No disponible</b><p class="small muted" style="margin:6px 0 0">Esta herramienta está en pruebas y solo la ve el administrador.</p></div>`;
+  if(FX.paso==='leyendo')return`<div class="card" style="text-align:center;padding:32px 16px"><div class="fx-spin" aria-hidden="true"></div><b>Leyendo la factura…</b><p class="small muted" style="margin:6px 0 0">Tarda entre 10 y 40 segundos. No cierres la app.</p></div>`;
+  if(FX.paso==='revisar'&&FX.datos)return fxRevisarHTML();
+  return fxInicioHTML()},
+  mount(){
+    if(!ADMIN.ok)return;
+    if(FX.paso==='inicio'){if(FX.resumen===null)fxCargar();
+      $$('[data-fx-file]').forEach(el=>el.onchange=()=>{const f=el.files&&el.files[0];el.value='';fxLeer(f)});
+      const q=$('#fx-q');if(q)q.oninput=()=>{FX.q=q.value;const p=q.selectionStart;render();const n=$('#fx-q');n.focus();try{n.setSelectionRange(p,p)}catch(e){}}}
+    if(FX.paso==='revisar'){const d=FX.datos;
+      const t=$('#fx-total');t.oninput=()=>{t.value=fmtTyping(t.value);d.total=Math.round(parseAmt(t.value));fxUpd()};
+      $('#fx-tienda').oninput=e=>d.tienda=e.target.value;$('#fx-fecha').onchange=e=>d.fecha=e.target.value||today();
+      $$('[data-fx]').forEach(el=>{const ev=el.tagName==='SELECT'?'change':'input';el.addEventListener(ev,()=>{const it=d.items[+el.dataset.i],f=el.dataset.fx;
+        if(f==='precio_total'){el.value=fmtTyping(el.value);it.precio_total=Math.round(parseAmt(el.value))}
+        else if(f==='cantidad'||f==='contenido')it[f]=el.value;else it[f]=el.value;
+        it.aprendido=false;fxUpd(+el.dataset.i)})})}}};
+
+function fxUpd(i){
+  const d=FX.datos;if(i!=null){const it=d.items[i],row=$(`[data-fx-row="${i}"]`),b=fxBase(it);
+    if(row){row.classList.toggle('fx-bad',fxFalta(it));row.classList.toggle('fx-doubt',!fxFalta(it)&&!it.seguro);
+      $(`[data-fx-base="${i}"]`).innerHTML=b?`= <b class="num">${fmt(b)}</b> por ${FX_U[it.unidad]}`:'<span class="neg">Falta un dato para calcular el precio</span>'}}
+  $('#fx-check').innerHTML=fxChequeo();
+  const nf=d.items.filter(fxFalta).length,s=$('#fx-save');s.disabled=!!nf;s.textContent=nf?`Completa ${nf} línea${nf>1?'s':''} en rojo`:'Guardar factura'}
+
+async function fxGuardar(){
+  const d=FX.datos;if(d.items.some(fxFalta))return;
+  const dud=d.items.findIndex(x=>!x.seguro);
+  if(dud>=0&&!FX.revisado){FX.revisado=true;toast('Revisa las líneas en amarillo y vuelve a tocar Guardar');const r=$(`[data-fx-row="${dud}"]`);if(r)r.scrollIntoView({behavior:'smooth',block:'center'});return}
+  const s=$('#fx-save');s.disabled=true;s.textContent='Guardando…';
+  const p={tienda:d.tienda.trim(),fecha:d.fecha,total:d.total||null,items:d.items.map(x=>({texto:x.texto,producto:x.producto.trim(),unidad:x.unidad,cantidad:fxNum(x.cantidad),contenido:fxNum(x.contenido),precio_total:x.precio_total}))};
+  const{error}=await sb.rpc('guardar_factura',{p});
+  if(error){s.disabled=false;s.textContent='Guardar factura';toast('No se pudo guardar: '+(error.message||'error'));return}
+  FX.paso='inicio';FX.datos=null;FX.resumen=null;FX.err='';render();toast(`Factura guardada · ${p.items.length} producto${p.items.length>1?'s':''}`)}
+
+async function fxProd(id){
+  const p=(FX.resumen||[]).find(x=>x.producto_id===id);if(!p)return;
+  openSheet(`<h3>${esc(p.nombre)}</h3><p class="small muted" style="margin:0 0 12px">Cargando historial…</p>`);
+  const{data,error}=await sb.from('items_factura').select('id,precio_base,precio_total,cantidad,contenido,texto_original,facturas(fecha,tienda)').eq('producto_id',id).limit(200);
+  if($('#sheet').hidden)return;
+  const rows=(data||[]).filter(r=>r.facturas).sort((a,b)=>b.facturas.fecha.localeCompare(a.facturas.fecha)||b.id-a.id);
+  $('#sheet-body').innerHTML=`<h3>${esc(p.nombre)}</h3>
+    <div class="card" style="margin-bottom:12px"><div class="prow-top"><span>Mediana 90 días</span><b class="num">${fmt(p.mediana)} / ${FX_U[p.unidad]}</b></div>
+    <div class="prow-top small muted"><span>Más barato · más caro</span><span class="num">${fmt(p.minimo)} · ${fmt(p.maximo)}</span></div></div>
+    ${error?'<p class="err">No se pudo cargar el historial.</p>':`<div class="list">${rows.map(r=>`<div class="mov"><span class="mov-main"><span class="mov-t">${esc(r.facturas.tienda||'Sin tienda')} · ${dayLabel(r.facturas.fecha)} ${r.facturas.fecha.slice(0,4)}</span><span class="mov-s">${esc(r.texto_original||'')} · ${+r.cantidad} × ${+r.contenido} ${FX_U[p.unidad]} = ${fmt(r.precio_total)}</span></span><span class="mov-a num">${fmt(r.precio_base)}</span></div>`).join('')}</div>`}
+    <div class="stack" style="margin-top:14px"><button class="btn block ghost" data-act="closeSheet">Cerrar</button></div>`}
+
+async function fxFact(id){
+  const f=(FX.facturas||[]).find(x=>x.id===id);if(!f)return;
+  openSheet(`<h3>${esc(f.tienda||'Factura')}</h3><p class="small muted">Cargando…</p>`);
+  const{data}=await sb.from('items_factura').select('id,texto_original,precio_total,productos(nombre)').eq('factura_id',id).order('id');
+  if($('#sheet').hidden)return;
+  $('#sheet-body').innerHTML=`<h3>${esc(f.tienda||'Factura')}</h3><p class="small muted" style="margin:0 0 12px">${dayLabel(f.fecha)} ${f.fecha.slice(0,4)}${f.total!=null?' · total '+fmt(f.total):''}</p>
+    <div class="list">${(data||[]).map(r=>`<div class="mov"><span class="mov-main"><span class="mov-t">${esc(r.productos?r.productos.nombre:'Sin producto')}</span><span class="mov-s">${esc(r.texto_original||'')}</span></span><span class="mov-a num">${fmt(r.precio_total)}</span></div>`).join('')}</div>
+    <div class="stack" style="margin-top:14px"><button class="btn block ghost" data-act="closeSheet">Cerrar</button><button class="btn block ghost" id="fx-delf" style="color:var(--neg)">Eliminar esta factura</button></div>`;
+  $('#fx-delf').onclick=()=>confirmSheet('¿Eliminar la factura?','Se borran sus precios del historial. Los productos y lo aprendido se conservan.','Eliminar',async()=>{
+    const{error}=await sb.from('facturas').delete().eq('id',id);if(error){toast('No se pudo eliminar');return}FX.resumen=null;render();toast('Factura eliminada')},true)}
+
+Object.assign(ACT,{
+  fxDel:el=>{const d=FX.datos;d.items.splice(+el.dataset.i,1);if(!d.items.length)d.items.push({k:Date.now(),texto:'',producto:'',unidad:'und',cantidad:1,contenido:1,precio_total:0,seguro:true});render()},
+  fxAdd:()=>{FX.datos.items.push({k:Date.now(),texto:'',producto:'',unidad:'und',cantidad:1,contenido:1,precio_total:0,seguro:true});render();const r=$$('.fxr');if(r.length){r[r.length-1].scrollIntoView({block:'center'});const i=$('input',r[r.length-1]);if(i)i.focus()}},
+  fxGuardar:()=>fxGuardar(),
+  fxCancelar:()=>confirmSheet('¿Descartar esta lectura?','No se guarda nada de esta factura.','Descartar',()=>{FX.paso='inicio';FX.datos=null;render()},true),
+  fxProd:el=>fxProd(+el.dataset.id),
+  fxFact:el=>fxFact(+el.dataset.id),
+});
+/*FX-FIN*/
+
 /* ============ render ============ */
 function renderTop(){
   const sub=TITLES[UI.view];
@@ -2829,6 +3001,7 @@ async function gotSession(s){
   try{localStorage.removeItem(MODEK)}catch(e){}
   await Promise.race([cloudSync(),sleep(7000)]);
   if(!started)startup();
+  adminCheck();
   askSoon();
   if(cloud.recovery){cloud.recovery=false;setTimeout(passSheet,900)}
 }
@@ -2840,7 +3013,7 @@ async function boot(){
     await loadSB();
     sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}});
     sb.auth.onAuthStateChange((ev,s)=>{
-      if(ev==='SIGNED_OUT'&&cloud.user&&!cloud.leaving){cloud.user=null;setState('off')}
+      if(ev==='SIGNED_OUT'&&cloud.user&&!cloud.leaving){cloud.user=null;ADMIN.ok=false;setState('off')}
       else if(ev==='PASSWORD_RECOVERY'){if(started)setTimeout(passSheet,500);else cloud.recovery=true}
       else if(ev==='SIGNED_IN'&&s&&!cloud.user)setTimeout(()=>gotSession(s),0)});
     ses=(await sb.auth.getSession()).data.session;
@@ -2965,7 +3138,7 @@ async function doLogout(){
   closeSheet();
   if(metaGet().dirty){await cloudPush();if(metaGet().dirty){toast('No se pudo subir tu último cambio. No se cerró la sesión.');return}}
   cloud.leaving=true;try{await sb.auth.signOut({scope:'local'})}catch(e){}
-  wipeLocal();cloud.user=null;cloud.ask=null;cloud.leaving=false;setState('off');S=demo();D=null;UI.view='inicio';render();authScreen();
+  wipeLocal();cloud.user=null;ADMIN.ok=false;cloud.ask=null;cloud.leaving=false;setState('off');S=demo();D=null;UI.view='inicio';render();authScreen();
 }
 V.instalar={html(){
   const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/i.test(ua);
