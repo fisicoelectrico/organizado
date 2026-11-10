@@ -4,7 +4,7 @@
 //
 // Secretos (Supabase › Edge Functions › Secrets):
 //   ANTHROPIC_API_KEY   obligatorio
-//   MODELO_FACTURAS     opcional (por defecto claude-opus-5-5; claude-haiku-5-5 cuesta mucho menos)
+//   MODELO_FACTURAS     opcional (por defecto claude-haiku-5-5; claude-opus-5-5 lee mejor fotos difíciles)
 //   TOPE_DIARIO         opcional (lecturas por día y por usuario, por defecto 40)
 import Anthropic from "npm:@anthropic-ai/sdk@1.3.0";
 import { createClient } from "npm:@supabase/supabase-js@2.58.0";
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
   await sb.from("lecturas_factura").insert({});
 
-  const modelo = Deno.env.get("MODELO_FACTURAS") || "claude-opus-5-5";
+  const modelo = Deno.env.get("MODELO_FACTURAS") || "claude-haiku-5-5";
   const client = new Anthropic({ apiKey: key });
   try {
     const params: Record<string, unknown> = {
